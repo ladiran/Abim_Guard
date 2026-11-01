@@ -26,26 +26,41 @@ jobs:
       - name: Build
         run: cargo build --release
 
-      - name: Self-check (the program must not flag itself)
+      - name: Self-check (the programs must not flag themselves)
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force selfcheck | Out-Null
           Copy-Item target/release/bimbo-guard.exe selfcheck/copy-of-bimbo-guard.exe
+          Copy-Item target/release/bimbo-guard-cli.exe selfcheck/copy-of-bimbo-guard-cli.exe
           $env:BIMBO_GUARD_HOME = "$PWD/hg-data"
           $env:BIMBO_GUARD_NO_SELF_SKIP = "1"
-          ./target/release/bimbo-guard.exe scan selfcheck --no-quarantine
-          if ($LASTEXITCODE -ne 0) { throw "bimbo-guard.exe flagged a copy of itself" }
+          ./target/release/bimbo-guard-cli.exe scan selfcheck --no-quarantine
+          if ($LASTEXITCODE -ne 0) { throw "Bimbo Guard flagged its own program files (exit code $LASTEXITCODE)" }
+
+      - name: Smoke test on Windows
+        shell: pwsh
+        run: |
+          $env:BIMBO_GUARD_HOME = "$PWD/hg-data"
+          ./target/release/bimbo-guard-cli.exe status
+          ./target/release/bimbo-guard-cli.exe usb
+          ./target/release/bimbo-guard-cli.exe camera-mic
+          exit 0
 
       - name: Hash
         shell: pwsh
-        run: (Get-FileHash target/release/bimbo-guard.exe -Algorithm SHA256).Hash.ToLower() + "  bimbo-guard.exe" | Out-File -Encoding ascii target/release/bimbo-guard.exe.sha256
+        run: |
+          Set-Location target/release
+          $lines = foreach ($f in "bimbo-guard.exe", "bimbo-guard-cli.exe") { (Get-FileHash $f -Algorithm SHA256).Hash.ToLower() + "  " + $f }
+          $lines | Out-File -Encoding ascii SHA256SUMS.txt
+          Get-Content SHA256SUMS.txt
 
       - uses: actions/upload-artifact@v4
         with:
           name: bimbo-guard-windows
           path: |
             target/release/bimbo-guard.exe
-            target/release/bimbo-guard.exe.sha256
+            target/release/bimbo-guard-cli.exe
+            target/release/SHA256SUMS.txt
 
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -53,5 +68,6 @@ jobs:
         with:
           files: |
             target/release/bimbo-guard.exe
-            target/release/bimbo-guard.exe.sha256
+            target/release/bimbo-guard-cli.exe
+            target/release/SHA256SUMS.txt
           generate_release_notes: true

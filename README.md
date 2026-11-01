@@ -23,7 +23,7 @@ Severity levels: **Malicious** (auto-quarantined), **Test file** (EICAR, auto-qu
 
 ## Getting started
 
-1. Download `bimbo-guard.exe` from the [latest release](https://github.com/ladiran/Bimbo_Guard/releases/latest) and double-click it. Windows SmartScreen may say "Windows protected your PC" because the program is not code-signed yet. Click **More info**, then **Run anyway**.
+1. Download `bimbo-guard.exe` (and, for terminal use, `bimbo-guard-cli.exe`) from the [latest release](https://github.com/ladiran/Bimbo_Guard/releases/latest), keep them in the same folder, and double-click `bimbo-guard.exe`. `SHA256SUMS.txt` on the release page lets you check the files are exactly what GitHub built. Windows SmartScreen may say "Windows protected your PC" because the program is not code-signed yet. Click **More info**, then **Run anyway**.
 2. The Overview page shows Defender's status and starts real-time protection.
 3. Click **Quick scan** for a first check.
 4. Optional: Settings, then tick **Open Bimbo Guard minimised when I sign in**.
@@ -35,24 +35,26 @@ No installer and no administrator rights are needed. Data lives in `%LOCALAPPDAT
 Use the industry-standard EICAR test file, which is harmless text that every antivirus treats as a "virus" by agreement:
 
 ```
-bimbo-guard.exe eicar C:\Users\Public\eicar.com
-bimbo-guard.exe scan C:\Users\Public --no-quarantine
+bimbo-guard-cli.exe eicar C:\Users\Public\eicar.com
+bimbo-guard-cli.exe scan C:\Users\Public --no-quarantine
 ```
 
-Microsoft Defender will probably grab the file first. That is expected and shows Defender is working. To test Bimbo Guard on its own, add `C:\Users\Public\eicar_test` as a temporary exclusion in Windows Security, then remove the exclusion afterwards.
+Microsoft Defender will probably grab the file first. That is expected and shows Defender is working. To test Bimbo Guard on its own, add `C:\Users\Public\eicar.com` as a temporary exclusion in Windows Security, then remove the exclusion afterwards.
 
 ## Command line
 
+Use **`bimbo-guard-cli.exe`** in Command Prompt or PowerShell. It shares the engine with the app but prints normally and returns proper exit codes, so it also works in scripts.
+
 ```
-bimbo-guard scan <path>...        scan files or folders (exit code 1 if anything found)
-bimbo-guard quick                 quick scan
-bimbo-guard startup               startup audit
-bimbo-guard status                Defender and engine status
-bimbo-guard quarantine list | restore <id> | delete <id>
-bimbo-guard import-hashes <file>  add SHA-256 hashes (txt, csv or zip)
-bimbo-guard usb                   USB ports: count, type, in use / free, devices
-bimbo-guard camera-mic            programs using the camera or microphone now, plus history
-bimbo-guard monitor               live USB and camera/microphone events (Ctrl+C to stop)
+bimbo-guard-cli scan <path>...        scan files or folders (exit code 1 if anything found)
+bimbo-guard-cli quick                 quick scan
+bimbo-guard-cli startup               startup audit
+bimbo-guard-cli status                Defender and engine status
+bimbo-guard-cli quarantine list | restore <id> | delete <id>
+bimbo-guard-cli import-hashes <file>  add SHA-256 hashes (txt, csv or zip)
+bimbo-guard-cli usb                   USB ports: count, type, in use / free, devices
+bimbo-guard-cli camera-mic            programs using the camera or microphone now, plus history
+bimbo-guard-cli monitor               live USB and camera/microphone events (Ctrl+C to stop)
 ```
 
 ## Keeping detections current
@@ -85,11 +87,14 @@ On Windows: install Rust from https://rustup.rs, then in this folder:
 cargo build --release
 ```
 
-The program appears at `target\release\bimbo-guard.exe`. (The icon and version details are embedded with the `winresource` crate, which uses the Windows SDK's `rc.exe` or MinGW's `windres`.)
+The programs appear at `target\release\bimbo-guard.exe` (the app) and `target\release\bimbo-guard-cli.exe` (terminal commands). (The icon and version details are embedded with the `winresource` crate, which uses the Windows SDK's `rc.exe` or MinGW's `windres`.)
 
 ## Project layout
 
 ```
+src/main.rs        the windowed program (bimbo-guard.exe)
+src/bin/           the terminal program (bimbo-guard-cli.exe)
+src/lib.rs         shared start-up code and terminal commands
 src/engine.rs      detection engine: YARA-X, hashes, heuristics
 src/scan.rs        multi-threaded folder scans
 src/watcher.rs     real-time folder and USB watching
