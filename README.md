@@ -79,7 +79,7 @@ The bundled rules catch well-known patterns, not new malware families. To stay c
 
 ## Building from source
 
-Written in Rust. Every push is built and tested on Windows by GitHub Actions, and each tagged version (`v*`) is published on the Releases page with the .exe built by GitHub from this source.
+Written in Rust. Every push is built and tested on Windows by GitHub Actions, and when a release is published on the Releases page, GitHub builds both programs from this source and attaches them to it.
 
 On Windows: install Rust from https://rustup.rs, then in this folder:
 
