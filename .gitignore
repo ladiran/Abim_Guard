@@ -1,0 +1,5 @@
+/target
+*.pdb
+# Personal app data never belongs in the repository
+settings.json
+known_bad_sha256.txt
