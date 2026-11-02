@@ -95,15 +95,15 @@ impl Realtime {
                         if let ScanOutcome::Detected(d) = engine.scan_file(&mut scanner, &p) {
                             let (d, action) = core.handle_detection(d, true);
                             if popup_alerts {
-                                crate::system::alert(
-                                    "Bimbo Guard: threat found",
+                                crate::system::notify(
+                                    &format!("Threat found: {}", d.severity().label()),
                                     &format!(
-                                        "{}\n\n{} ({})\n\nAction: {}",
-                                        d.path.display(),
+                                        "{}\n{}\nAction: {}",
+                                        d.path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
                                         d.summary(),
-                                        d.severity().label(),
                                         action
                                     ),
+                                    true,
                                 );
                             }
                             a.lock().unwrap().push((d, action));

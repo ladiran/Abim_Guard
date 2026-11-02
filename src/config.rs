@@ -69,6 +69,8 @@ pub struct Settings {
     /// Apps allowed to use the camera/microphone without a pop-up
     /// (still logged). Registry ids, lower case.
     pub trusted_av_apps: Vec<String>,
+    /// Closing the window keeps Bimbo Guard running in the system tray.
+    pub close_to_tray: bool,
 }
 
 impl Default for Settings {
@@ -93,6 +95,7 @@ impl Default for Settings {
             usb_popups: true,
             av_popups: true,
             trusted_av_apps: Vec::new(),
+            close_to_tray: true,
         }
     }
 }

@@ -15,6 +15,7 @@ mod quarantine;
 mod scan;
 mod startup;
 mod system;
+mod tray;
 mod watcher;
 
 use std::path::PathBuf;
