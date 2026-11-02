@@ -109,6 +109,10 @@ src/gui.rs         desktop window
 rules/core.yar     bundled detection rules
 ```
 
+## Microsoft Store version
+
+The same code is also packaged for the Microsoft Store (`packaging/msix/`). The Store version keeps its data in its own package folder, starts at sign-in through Windows' startup settings (**Settings > Apps > Startup**), and is signed by Microsoft. Submission steps, listing text and test instructions are in [docs/microsoft-store.md](docs/microsoft-store.md).
+
 ## Code signing policy
 
 Release programs are built from this repository's source by GitHub Actions on Windows (see `.github/workflows/build.yml`) and published on the [Releases](https://github.com/ladiran/Bimbo_Guard/releases) page together with `SHA256SUMS.txt`. Signing of release builds through the [SignPath Foundation](https://signpath.org) programme has been requested; until it is approved, release files are unsigned.

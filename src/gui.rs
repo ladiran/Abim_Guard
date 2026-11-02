@@ -649,6 +649,14 @@ impl GuiApp {
                     self.say(format!("Could not change startup setting: {e}"), false);
                 }
             }
+            if crate::package::is_packaged() {
+                ui.horizontal_wrapped(|ui| {
+                    ui.weak("Windows also lists this under Settings > Apps > Startup.");
+                    if ui.small_button("Open Startup settings").clicked() {
+                        crate::package::open_startup_settings();
+                    }
+                });
+            }
             if ui.button("Open app data folder").clicked() {
                 system::open_folder(&self.core.paths.root);
             }

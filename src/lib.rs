@@ -10,6 +10,7 @@ mod config;
 mod core;
 mod engine;
 mod feeds;
+mod package;
 mod gui;
 mod quarantine;
 mod scan;
@@ -59,7 +60,7 @@ pub fn run(console: bool) {
     let first = args.first().map(String::as_str).unwrap_or("");
 
     if !console && (first.is_empty() || first == "--minimized") {
-        run_gui(first == "--minimized");
+        run_gui(first == "--minimized" || package::launched_at_sign_in());
         return;
     }
     if console && first.is_empty() {
