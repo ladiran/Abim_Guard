@@ -84,6 +84,12 @@ Copy this so the reviewers understand why a security tool reads this information
 > To test detection safely, use the industry-standard EICAR test file: run "bimbo-guard-cli eicar C:\Users\Public\eicar.com" (Defender may remove it first, which is expected).
 > No account, sign-in, purchase or network service is required.
 
+### Restricted capability (runFullTrust)
+
+When the package is uploaded, Partner Center warns that `runFullTrust` needs approval. That is normal for every desktop (Win32) app. On the **Submission options** page, under **Restricted capabilities**, paste:
+
+> Bimbo Guard is a classic Win32 desktop application (Rust, packaged as MSIX), not a UWP app, so it needs runFullTrust to run at all. As a companion malware scanner it must read files in the user's folders and on USB drives to scan them, query USB hub information for its port report, read the camera and microphone usage records in the registry to alert the user, and start Microsoft Defender's MpCmdRun.exe for a second opinion. It never disables Defender and sends no data off the device. Source code: https://github.com/ladiran/Bimbo_Guard
+
 ## 5. Pricing and availability
 
 Free, all markets. No in-app purchases.

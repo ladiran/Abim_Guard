@@ -52,20 +52,12 @@
         <uap5:Extension Category="windows.startupTask" Executable="bimbo-guard.exe" EntryPoint="Windows.FullTrustApplication">
           <uap5:StartupTask TaskId="BimboGuardStartup" Enabled="false" DisplayName="Bimbo Guard" />
         </uap5:Extension>
-      </Extensions>
-    </Application>
-
-    <!-- Terminal commands: lets users type bimbo-guard-cli in Command Prompt or PowerShell. -->
-    <Application Id="BimboGuardCli" Executable="bimbo-guard-cli.exe" EntryPoint="Windows.FullTrustApplication"
-                 desktop4:Subsystem="console" desktop4:SupportsMultipleInstances="true">
-      <uap:VisualElements
-        DisplayName="Bimbo Guard (command line)"
-        Description="Bimbo Guard terminal commands"
-        BackgroundColor="transparent"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png"
-        AppListEntry="none" />
-      <Extensions>
+        <!--
+          Terminal commands: lets users type bimbo-guard-cli in Command Prompt or PowerShell.
+          The alias points at the console program inside this same app (the pattern Windows
+          Terminal uses for wt.exe), so the package has one app and no hidden "headless" app,
+          which the Store only allows with a special waiver.
+        -->
         <uap3:Extension Category="windows.appExecutionAlias" Executable="bimbo-guard-cli.exe" EntryPoint="Windows.FullTrustApplication">
           <uap3:AppExecutionAlias>
             <desktop:ExecutionAlias Alias="bimbo-guard-cli.exe" />
