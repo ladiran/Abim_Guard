@@ -57,7 +57,7 @@
 
     <!-- Terminal commands: lets users type bimbo-guard-cli in Command Prompt or PowerShell. -->
     <Application Id="BimboGuardCli" Executable="bimbo-guard-cli.exe" EntryPoint="Windows.FullTrustApplication"
-                 desktop4:Subsystem="console">
+                 desktop4:Subsystem="console" desktop4:SupportsMultipleInstances="true">
       <uap:VisualElements
         DisplayName="Bimbo Guard (command line)"
         Description="Bimbo Guard terminal commands"
