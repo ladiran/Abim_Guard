@@ -21,6 +21,7 @@ rfd = "0.15"
 dirs = "6"
 anyhow = "1"
 crossbeam-channel = "0.5"
+raw-window-handle = "0.6"
 
 [build-dependencies]
 winresource = "0.1.34"
@@ -38,6 +39,9 @@ windows-sys = { version = "0.61", features = [
     "Win32_Security",
     "Win32_Devices_Usb",
     "Win32_Devices_DeviceAndDriverInstallation",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_Shell",
+    "Win32_Graphics_Gdi",
 ] }
 
 [profile.release]

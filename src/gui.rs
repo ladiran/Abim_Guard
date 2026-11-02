@@ -54,6 +54,10 @@ pub struct GuiApp {
     busy: Arc<AtomicBool>,
     start_minimized: bool,
     first_frame: bool,
+    tray_on: bool,
+    quitting: Arc<AtomicBool>,
+    toggle_requested: Arc<AtomicBool>,
+    told_about_tray: bool,
 }
 
 fn sev_color(s: Severity) -> Color32 {
@@ -95,7 +99,34 @@ impl GuiApp {
             busy: Arc::new(AtomicBool::new(false)),
             start_minimized,
             first_frame: true,
+            tray_on: false,
+            quitting: Arc::new(AtomicBool::new(false)),
+            toggle_requested: Arc::new(AtomicBool::new(false)),
+            told_about_tray: false,
         };
+
+        // Remember the window so the tray can show and hide it.
+        {
+            use raw_window_handle::{HasWindowHandle, RawWindowHandle};
+            if let Ok(h) = cc.window_handle() {
+                if let RawWindowHandle::Win32(w) = h.as_raw() {
+                    crate::tray::set_main_window(w.hwnd.get());
+                }
+            }
+        }
+        let ctx = cc.egui_ctx.clone();
+        let (quit, toggle) = (app.quitting.clone(), app.toggle_requested.clone());
+        app.tray_on = crate::tray::start(move |ev| {
+            match ev {
+                crate::tray::TrayEvent::Open => crate::tray::show_main_window(),
+                crate::tray::TrayEvent::TogglePause => toggle.store(true, Ordering::SeqCst),
+                crate::tray::TrayEvent::Quit => {
+                    quit.store(true, Ordering::SeqCst);
+                    crate::tray::close_main_window();
+                }
+            }
+            ctx.request_repaint();
+        });
         app.refresh_defender();
         if core.settings().realtime_on_start {
             app.toggle_realtime();
@@ -127,6 +158,7 @@ impl GuiApp {
                 Err(e) => self.say(format!("Could not start real-time protection: {e}"), false),
             }
         }
+        crate::tray::set_paused(self.realtime.is_none());
     }
 
     fn start_scan(&mut self, label: &str, roots: Vec<PathBuf>) {
@@ -507,7 +539,8 @@ impl GuiApp {
             ui.checkbox(&mut self.draft.defender_second_opinion, "Ask Microsoft Defender for a second opinion on each detection");
             ui.checkbox(&mut self.draft.device_monitor, "Watch USB ports and camera/microphone use in real time");
             ui.checkbox(&mut self.draft.usb_popups, "Pop up when a USB device is plugged in");
-            ui.checkbox(&mut self.draft.av_popups, "Pop up when the camera or microphone is switched on");
+            ui.checkbox(&mut self.draft.av_popups, "Notify me whenever any program switches the camera or microphone on");
+            ui.checkbox(&mut self.draft.close_to_tray, "Keep running in the system tray when I close the window");
             ui.horizontal_wrapped(|ui| {
                 ui.label("Largest file to pattern scan (MB)");
                 ui.add(egui::DragValue::new(&mut self.draft.max_scan_mb).range(1..=2048));
@@ -611,7 +644,7 @@ impl GuiApp {
             ui.separator();
             ui.strong("Windows");
             let mut auto = crate::autostart::is_enabled();
-            if ui.checkbox(&mut auto, "Open Bimbo Guard minimised when I sign in").changed() {
+            if ui.checkbox(&mut auto, "Start Bimbo Guard in the system tray when I sign in").changed() {
                 if let Err(e) = crate::autostart::set(auto) {
                     self.say(format!("Could not change startup setting: {e}"), false);
                 }
@@ -779,11 +812,11 @@ impl GuiApp {
                 ui.horizontal_wrapped(|ui| {
                     let is_trusted = trusted.iter().any(|t| t.eq_ignore_ascii_case(&e.app_id));
                     if is_trusted {
-                        ui.weak("Trusted: no pop-ups for this app");
+                        ui.weak("Trusted: notifications for this app are marked trusted");
                         if ui.small_button("Stop trusting").clicked() {
                             trust_change = Some((e.app_id.clone(), false));
                         }
-                    } else if ui.small_button("Trust this app").on_hover_text("No more pop-ups for it. Use is still logged.").clicked() {
+                    } else if ui.small_button("Trust this app").on_hover_text("Its notifications will say \"trusted\" instead of warning you. Use is still logged.").clicked() {
                         trust_change = Some((e.app_id.clone(), true));
                     }
                     if let Some(p) = &e.exe {
@@ -974,8 +1007,36 @@ impl eframe::App for GuiApp {
         let ctx = ui.ctx().clone();
         if self.first_frame {
             self.first_frame = false;
+            crate::tray::set_paused(self.realtime.is_none());
             if self.start_minimized {
-                ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+                if self.tray_on {
+                    crate::tray::hide_main_window();
+                } else {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+                }
+            }
+        }
+
+        // Tray menu: pause or resume real-time protection.
+        if self.toggle_requested.swap(false, Ordering::SeqCst) {
+            self.toggle_realtime();
+        }
+
+        // Closing the window keeps protection running in the tray.
+        if ctx.input(|i| i.viewport().close_requested())
+            && self.tray_on
+            && self.core.settings().close_to_tray
+            && !self.quitting.load(Ordering::SeqCst)
+        {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            crate::tray::hide_main_window();
+            if !self.told_about_tray {
+                self.told_about_tray = true;
+                crate::system::notify(
+                    "Bimbo Guard is still running",
+                    "Protection continues in the system tray. Right-click the shield icon to open or quit.",
+                    false,
+                );
             }
         }
 
@@ -1080,6 +1141,7 @@ impl eframe::App for GuiApp {
 
 impl Drop for GuiApp {
     fn drop(&mut self) {
+        crate::tray::remove();
         if let Some(m) = self.devmon.take() {
             m.stop();
         }

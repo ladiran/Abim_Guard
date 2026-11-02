@@ -166,6 +166,15 @@ pub fn fixed_drives() -> Vec<PathBuf> {
     }
 }
 
+/// Tell the user something important: a small tray notification when the
+/// app's tray icon is running, otherwise a message box.
+pub fn notify(title: &str, text: &str, warning: bool) {
+    let level = if warning { crate::tray::Level::Warning } else { crate::tray::Level::Info };
+    if !crate::tray::notify(title, text, level) {
+        alert(title, text);
+    }
+}
+
 /// A pop-up alert that works even when the main window is minimised.
 pub fn alert(title: &str, text: &str) {
     #[cfg(windows)]

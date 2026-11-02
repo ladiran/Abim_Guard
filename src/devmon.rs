@@ -63,14 +63,15 @@ impl DeviceMonitor {
                 *a2.lock().unwrap() = new_av;
                 let settings = core.settings();
                 for c in changes {
-                    let (kind, warning, popup_ok) = match &c {
+                    let (kind, warning, trusted, started) = match &c {
                         AvChange::Started { device, flags, app_id, .. } => (
                             if *device == av::Device::Camera { "camera" } else { "microphone" },
                             !flags.is_empty(),
-                            !settings.trusted_av_apps.iter().any(|t| t.eq_ignore_ascii_case(app_id)),
+                            settings.trusted_av_apps.iter().any(|t| t.eq_ignore_ascii_case(app_id)),
+                            true,
                         ),
                         AvChange::Stopped { device, .. } => {
-                            (if *device == av::Device::Camera { "camera" } else { "microphone" }, false, false)
+                            (if *device == av::Device::Camera { "camera" } else { "microphone" }, false, false, false)
                         }
                     };
                     let msg = c.message();
@@ -79,8 +80,26 @@ impl DeviceMonitor {
                         _ => None,
                     };
                     core.log(kind, msg.clone(), path.as_deref(), warning.then_some("Warning"));
-                    if popups && settings.av_popups && popup_ok {
-                        crate::system::alert("Bimbo Guard: privacy alert", &msg);
+                    // Every program that switches the camera or microphone on is
+                    // announced, hidden or approved, trusted or not.
+                    if popups && settings.av_popups && started {
+                        if let AvChange::Started { device, app, .. } = &c {
+                            let title = if warning {
+                                format!("Warning: {} turned on", device.label())
+                            } else {
+                                format!("{} turned on", device.label())
+                            };
+                            let mut body = format!("Used by {app}");
+                            if trusted {
+                                body.push_str(" (trusted)");
+                            }
+                            if let AvChange::Started { flags, .. } = &c {
+                                if !flags.is_empty() {
+                                    body.push_str(&format!(". {}", flags.join(". ")));
+                                }
+                            }
+                            crate::system::notify(&title, &body, warning);
+                        }
                     }
                     push(&f2, kind, msg, warning);
                 }
@@ -101,7 +120,7 @@ impl DeviceMonitor {
                         core.log("usb", msg.clone(), None, None);
                         let is_connect = matches!(c, UsbChange::Connected { .. });
                         if popups && settings.usb_popups && is_connect {
-                            crate::system::alert("Bimbo Guard: USB device connected", &msg);
+                            crate::system::notify("USB device connected", &msg, false);
                         }
                         push(&f2, "usb", msg, false);
                     }

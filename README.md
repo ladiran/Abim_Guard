@@ -17,7 +17,8 @@ A companion malware scanner for Windows 10 and 11. It runs **alongside Microsoft
 | Startup audit | Registry Run keys, Startup folders, Winlogon and scheduled tasks, flagged for common persistence tricks |
 | Defender health | Warns you if Defender's real-time protection has been switched off |
 | USB ports | Counts the computer's physical USB sockets, shows which are USB 3.x, USB 2.0 or USB-C, which are in use and which are free, and what is plugged into each. Updates every 2 seconds and logs every plug and unplug |
-| Camera & microphone | Shows, within about a second, any program that switches on the camera or microphone, whether or not it was given permission. Warns when the program has no visible window, runs from a temporary folder, or is flagged by the scanner |
+| System tray | Keeps protecting in the background when the window is closed. The shield icon by the clock opens the app, pauses or resumes protection, or quits |
+| Camera & microphone | Shows, within about a second, any program that switches on the camera or microphone, whether or not it was given permission, and announces it with a small tray notification (marked "trusted" for apps you trust). Warns when the program has no visible window, runs from a temporary folder, or is flagged by the scanner |
 
 Severity levels: **Malicious** (auto-quarantined), **Test file** (EICAR, auto-quarantined), **Suspicious** and **Unwanted (PUA)** (reported only, you decide).
 
@@ -107,6 +108,26 @@ src/system.rs      Defender, drives, alerts, downloads
 src/gui.rs         desktop window
 rules/core.yar     bundled detection rules
 ```
+
+## Code signing policy
+
+Release programs are built from this repository's source by GitHub Actions on Windows (see `.github/workflows/build.yml`) and published on the [Releases](https://github.com/ladiran/Bimbo_Guard/releases) page together with `SHA256SUMS.txt`. Signing of release builds through the [SignPath Foundation](https://signpath.org) programme has been requested; until it is approved, release files are unsigned.
+
+**Team roles**
+
+| Role | Member |
+|---|---|
+| Author (committer) | [Oladiran Johnson Abimbola](https://github.com/ladiran) |
+| Reviewer | [Oladiran Johnson Abimbola](https://github.com/ladiran) |
+| Approver (approves every release for signing) | [Oladiran Johnson Abimbola](https://github.com/ladiran) |
+
+* All team accounts use multi-factor authentication.
+* Anthropic's Claude (an AI assistant) helps write code. It has no account or access of its own: every change it drafts arrives as a pull request that the reviewer reads and merges, and every release is approved by the approver.
+* Only programs built automatically from this repository's source are released.
+
+## Privacy
+
+Bimbo Guard does not transfer any information to other networked systems unless specifically requested by the user. Its only network access is downloading a malware hash list, and only when the user presses **Download feed now** with a feed address they entered. The camera and microphone record, USB device list, scan results and logs stay on the computer, in `%LOCALAPPDATA%\BimboGuard`.
 
 ## Developer
 
