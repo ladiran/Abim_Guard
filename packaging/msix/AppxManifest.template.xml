@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Microsoft Store package manifest for Bimbo Guard.
+  The __PLACEHOLDERS__ are filled in by .github/workflows/build.yml from the
+  repository variables MSIX_IDENTITY_NAME, MSIX_PUBLISHER and
+  MSIX_PUBLISHER_DISPLAY_NAME (Partner Center > Product identity).
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 uap5 desktop desktop4 rescap">
+
+  <Identity
+    Name="__IDENTITY_NAME__"
+    Publisher="__PUBLISHER__"
+    Version="__VERSION__"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Bimbo Guard</DisplayName>
+    <PublisherDisplayName>__PUBLISHER_DISPLAY_NAME__</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Companion malware scanner for Windows that works alongside Microsoft Defender.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <!-- The app window (system tray when closed). -->
+    <Application Id="BimboGuard" Executable="bimbo-guard.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Bimbo Guard"
+        Description="Companion malware scanner that works alongside Microsoft Defender"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Off until the user ticks "Start Bimbo Guard in the system tray when I sign in". -->
+        <uap5:Extension Category="windows.startupTask" Executable="bimbo-guard.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:StartupTask TaskId="BimboGuardStartup" Enabled="false" DisplayName="Bimbo Guard" />
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+
+    <!-- Terminal commands: lets users type bimbo-guard-cli in Command Prompt or PowerShell. -->
+    <Application Id="BimboGuardCli" Executable="bimbo-guard-cli.exe" EntryPoint="Windows.FullTrustApplication"
+                 desktop4:Subsystem="console">
+      <uap:VisualElements
+        DisplayName="Bimbo Guard (command line)"
+        Description="Bimbo Guard terminal commands"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png"
+        AppListEntry="none" />
+      <Extensions>
+        <uap3:Extension Category="windows.appExecutionAlias" Executable="bimbo-guard-cli.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="bimbo-guard-cli.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

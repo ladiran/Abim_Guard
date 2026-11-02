@@ -1,4 +1,5 @@
-//! "Open when I sign in", using the per-user Run key (no admin needed).
+//! "Open when I sign in". Plain download: the per-user Run key (no admin
+//! needed). Microsoft Store version: Windows' startup task (see package.rs).
 
 #[cfg_attr(not(windows), allow(dead_code))]
 const VALUE: &str = "BimboGuard";
@@ -11,6 +12,9 @@ fn key() -> std::io::Result<winreg::RegKey> {
 }
 
 pub fn is_enabled() -> bool {
+    if crate::package::is_packaged() {
+        return crate::package::startup_state() == crate::package::StartupState::Enabled;
+    }
     #[cfg(windows)]
     {
         key().and_then(|k| k.get_value::<String, _>(VALUE)).is_ok()
@@ -22,6 +26,16 @@ pub fn is_enabled() -> bool {
 }
 
 pub fn set(on: bool) -> anyhow::Result<()> {
+    if crate::package::is_packaged() {
+        use crate::package::StartupState;
+        return match crate::package::set_startup(on)? {
+            StartupState::DisabledByUser if on => anyhow::bail!(
+                "starting at sign-in was switched off in Windows Settings. Turn Bimbo Guard on under Settings > Apps > Startup"
+            ),
+            StartupState::Blocked if on => anyhow::bail!("starting at sign-in is blocked on this computer by Windows policy"),
+            _ => Ok(()),
+        };
+    }
     #[cfg(windows)]
     {
         let k = key()?;

@@ -15,7 +15,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -55,7 +55,39 @@ jobs:
           $lines | Out-File -Encoding ascii SHA256SUMS.txt
           Get-Content SHA256SUMS.txt
 
-      - uses: actions/upload-artifact@v4
+      - name: Build Microsoft Store package (MSIX)
+        shell: pwsh
+        env:
+          # Set these as repository variables (Settings > Secrets and variables > Actions > Variables)
+          # from Partner Center > Product identity. The defaults make a local test package.
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME || 'BimboGuard.LocalTest' }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER || 'CN=BimboGuardLocalTest' }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'Oladiran Johnson Abimbola' }}
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value + ".0"
+          $layout = "target/msix-layout"
+          New-Item -ItemType Directory -Force "$layout/Assets" | Out-Null
+          Copy-Item target/release/bimbo-guard.exe, target/release/bimbo-guard-cli.exe $layout
+          Copy-Item packaging/msix/Assets/* "$layout/Assets"
+          (Get-Content packaging/msix/AppxManifest.template.xml -Raw).
+            Replace('__IDENTITY_NAME__', $env:MSIX_IDENTITY_NAME).
+            Replace('__PUBLISHER__', $env:MSIX_PUBLISHER).
+            Replace('__PUBLISHER_DISPLAY_NAME__', $env:MSIX_PUBLISHER_DISPLAY_NAME).
+            Replace('__VERSION__', $version) | Set-Content -Encoding utf8 "$layout/AppxManifest.xml"
+          $makeappx = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe" | Sort-Object FullName | Select-Object -Last 1
+          if (-not $makeappx) { throw "makeappx.exe not found in the Windows SDK" }
+          & $makeappx.FullName pack /d $layout /p "target/BimboGuard_${version}_x64.msix" /o
+          if ($LASTEXITCODE -ne 0) { throw "makeappx failed (exit $LASTEXITCODE)" }
+          Write-Host "Built target/BimboGuard_${version}_x64.msix for identity $env:MSIX_IDENTITY_NAME"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: bimbo-guard-microsoft-store
+          path: |
+            target/*.msix
+            target/msix-layout/
+
+      - uses: actions/upload-artifact@v6
         with:
           name: bimbo-guard-windows
           path: |

@@ -20,8 +20,12 @@ impl AppPaths {
     pub fn new() -> anyhow::Result<Self> {
         let base = std::env::var_os("BIMBO_GUARD_HOME")
             .map(PathBuf::from)
+            .or_else(crate::package::packaged_data_dir)
             .or_else(|| dirs::data_local_dir().map(|d| d.join("BimboGuard")))
             .ok_or_else(|| anyhow::anyhow!("cannot find a local app data folder"))?;
+        if crate::package::is_packaged() {
+            crate::package::migrate_from_unpackaged(&base);
+        }
         Self::at(&base)
     }
 
