@@ -38,7 +38,7 @@
 
   <Applications>
     <!-- The app window (system tray when closed). -->
-    <Application Id="BimboGuard" Executable="bimbo-guard.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="AbimGuard" Executable="abim-guard.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Abim Guard"
         Description="Companion malware scanner that works alongside Microsoft Defender"
@@ -49,18 +49,18 @@
       </uap:VisualElements>
       <Extensions>
         <!-- Off until the user ticks "Start Abim Guard in the system tray when I sign in". -->
-        <uap5:Extension Category="windows.startupTask" Executable="bimbo-guard.exe" EntryPoint="Windows.FullTrustApplication">
-          <uap5:StartupTask TaskId="BimboGuardStartup" Enabled="false" DisplayName="Abim Guard" />
+        <uap5:Extension Category="windows.startupTask" Executable="abim-guard.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:StartupTask TaskId="AbimGuardStartup" Enabled="false" DisplayName="Abim Guard" />
         </uap5:Extension>
         <!--
-          Terminal commands: lets users type bimbo-guard-cli in Command Prompt or PowerShell.
+          Terminal commands: lets users type abim-guard-cli in Command Prompt or PowerShell.
           The alias points at the console program inside this same app (the pattern Windows
           Terminal uses for wt.exe), so the package has one app and no hidden "headless" app,
           which the Store only allows with a special waiver.
         -->
-        <uap3:Extension Category="windows.appExecutionAlias" Executable="bimbo-guard-cli.exe" EntryPoint="Windows.FullTrustApplication">
+        <uap3:Extension Category="windows.appExecutionAlias" Executable="abim-guard-cli.exe" EntryPoint="Windows.FullTrustApplication">
           <uap3:AppExecutionAlias>
-            <desktop:ExecutionAlias Alias="bimbo-guard-cli.exe" />
+            <desktop:ExecutionAlias Alias="abim-guard-cli.exe" />
           </uap3:AppExecutionAlias>
         </uap3:Extension>
       </Extensions>

@@ -175,7 +175,7 @@ pub fn scan(engine: Option<&crate::engine::Engine>) -> AvReport {
     #[cfg(not(windows))]
     {
         let _ = engine;
-        if std::env::var_os("BIMBO_GUARD_DEMO").is_some() {
+        if std::env::var_os("ABIM_GUARD_DEMO").is_some() {
             return demo();
         }
         AvReport { errors: vec!["Camera and microphone monitoring is only available on Windows".into()], ..Default::default() }

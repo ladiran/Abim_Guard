@@ -2,7 +2,10 @@
 //! needed). Microsoft Store version: Windows' startup task (see package.rs).
 
 #[cfg_attr(not(windows), allow(dead_code))]
-const VALUE: &str = "BimboGuard";
+const VALUE: &str = "AbimGuard";
+/// Name used before the app was renamed (Bimbo Guard).
+#[cfg_attr(not(windows), allow(dead_code))]
+const OLD_VALUE: &str = "BimboGuard";
 
 #[cfg(windows)]
 fn key() -> std::io::Result<winreg::RegKey> {
@@ -17,7 +20,16 @@ pub fn is_enabled() -> bool {
     }
     #[cfg(windows)]
     {
-        key().and_then(|k| k.get_value::<String, _>(VALUE)).is_ok()
+        let Ok(k) = key() else { return false };
+        // Someone who ticked "open when I sign in" in the old version keeps
+        // that choice, now pointing at this program.
+        if k.get_value::<String, _>(OLD_VALUE).is_ok() {
+            let _ = k.delete_value(OLD_VALUE);
+            if let Ok(exe) = std::env::current_exe() {
+                let _ = k.set_value(VALUE, &format!("\"{}\" --minimized", exe.display()));
+            }
+        }
+        k.get_value::<String, _>(VALUE).is_ok()
     }
     #[cfg(not(windows))]
     {
@@ -45,6 +57,7 @@ pub fn set(on: bool) -> anyhow::Result<()> {
         } else {
             let _ = k.delete_value(VALUE);
         }
+        let _ = k.delete_value(OLD_VALUE);
         Ok(())
     }
     #[cfg(not(windows))]

@@ -1,6 +1,6 @@
 // 1. Scrambles the bundled detection rules so the finished program does not
 //    contain the very text its own rules search for (otherwise Abim Guard,
-//    or any other scanner, would flag bimbo-guard.exe as malware).
+//    or any other scanner, would flag abim-guard.exe as malware).
 // 2. Embeds the icon and version details into the Windows .exe (winresource).
 
 /// Must match `RULES_KEY` in src/engine.rs.
@@ -16,16 +16,16 @@ fn main() {
     }
     std::fs::write(out_dir.join("core.yar.bin"), rules).unwrap();
 
-    println!("cargo:rerun-if-changed=assets/bimbo-guard.ico");
+    println!("cargo:rerun-if-changed=assets/abim-guard.ico");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
     // Works with the Windows SDK (rc.exe) and with MinGW (windres).
     let mut res = winresource::WindowsResource::new();
-    res.set_icon("assets/bimbo-guard.ico")
+    res.set_icon("assets/abim-guard.ico")
         .set("FileDescription", "Abim Guard companion malware scanner")
         .set("ProductName", "Abim Guard")
-        .set("OriginalFilename", "bimbo-guard.exe")
+        .set("OriginalFilename", "abim-guard.exe")
         .set("CompanyName", "Oladiran Johnson Abimbola, Federal University of Lafia")
         .set("LegalCopyright", "Copyright (c) 2026 Oladiran Johnson Abimbola. MIT License")
         .set("Comments", "Anthropic's Claude was used to assist in building this application.");

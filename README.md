@@ -1,8 +1,8 @@
 # Abim Guard
 
-*Formerly Bimbo Guard. The app is now called Abim Guard, from the developer's name Abimbola; the GitHub project and program files keep the original name.*
+*Formerly Bimbo Guard. The app was renamed Abim Guard, after the developer's name Abimbola. Old links to the project still work, and settings, rules and quarantine from the old version are carried over automatically.*
 
-[![Build](https://github.com/ladiran/Bimbo_Guard/actions/workflows/build.yml/badge.svg)](https://github.com/ladiran/Bimbo_Guard/actions/workflows/build.yml)
+[![Build](https://github.com/ladiran/Abim_Guard/actions/workflows/build.yml/badge.svg)](https://github.com/ladiran/Abim_Guard/actions/workflows/build.yml)
 
 A companion malware scanner for Windows 10 and 11. It runs **alongside Microsoft Defender**, not in place of it, and adds a second set of eyes on the places malware usually lands.
 
@@ -26,38 +26,38 @@ Severity levels: **Malicious** (auto-quarantined), **Test file** (EICAR, auto-qu
 
 ## Getting started
 
-1. Download `bimbo-guard.exe` (and, for terminal use, `bimbo-guard-cli.exe`) from the [latest release](https://github.com/ladiran/Bimbo_Guard/releases/latest), keep them in the same folder, and double-click `bimbo-guard.exe`. `SHA256SUMS.txt` on the release page lets you check the files are exactly what GitHub built. Windows SmartScreen may say "Windows protected your PC" because the program is not code-signed yet. Click **More info**, then **Run anyway**.
+1. Download `abim-guard.exe` (and, for terminal use, `abim-guard-cli.exe`) from the [latest release](https://github.com/ladiran/Abim_Guard/releases/latest), keep them in the same folder, and double-click `abim-guard.exe`. `SHA256SUMS.txt` on the release page lets you check the files are exactly what GitHub built. Windows SmartScreen may say "Windows protected your PC" because the program is not code-signed yet. Click **More info**, then **Run anyway**.
 2. The Overview page shows Defender's status and starts real-time protection.
 3. Click **Quick scan** for a first check.
 4. Optional: Settings, then tick **Open Abim Guard minimised when I sign in**.
 
-No installer and no administrator rights are needed. Data lives in `%LOCALAPPDATA%\BimboGuard` (rules, quarantine, logs, settings).
+No installer and no administrator rights are needed. Data lives in `%LOCALAPPDATA%\AbimGuard` (rules, quarantine, logs, settings).
 
 ## Testing it safely
 
 Use the industry-standard EICAR test file, which is harmless text that every antivirus treats as a "virus" by agreement:
 
 ```
-bimbo-guard-cli.exe eicar C:\Users\Public\eicar.com
-bimbo-guard-cli.exe scan C:\Users\Public --no-quarantine
+abim-guard-cli.exe eicar C:\Users\Public\eicar.com
+abim-guard-cli.exe scan C:\Users\Public --no-quarantine
 ```
 
 Microsoft Defender will probably grab the file first. That is expected and shows Defender is working. To test Abim Guard on its own, add `C:\Users\Public\eicar.com` as a temporary exclusion in Windows Security, then remove the exclusion afterwards.
 
 ## Command line
 
-Use **`bimbo-guard-cli.exe`** in Command Prompt or PowerShell. It shares the engine with the app but prints normally and returns proper exit codes, so it also works in scripts.
+Use **`abim-guard-cli.exe`** in Command Prompt or PowerShell. It shares the engine with the app but prints normally and returns proper exit codes, so it also works in scripts.
 
 ```
-bimbo-guard-cli scan <path>...        scan files or folders (exit code 1 if anything found)
-bimbo-guard-cli quick                 quick scan
-bimbo-guard-cli startup               startup audit
-bimbo-guard-cli status                Defender and engine status
-bimbo-guard-cli quarantine list | restore <id> | delete <id>
-bimbo-guard-cli import-hashes <file>  add SHA-256 hashes (txt, csv or zip)
-bimbo-guard-cli usb                   USB ports: count, type, in use / free, devices
-bimbo-guard-cli camera-mic            programs using the camera or microphone now, plus history
-bimbo-guard-cli monitor               live USB and camera/microphone events (Ctrl+C to stop)
+abim-guard-cli scan <path>...        scan files or folders (exit code 1 if anything found)
+abim-guard-cli quick                 quick scan
+abim-guard-cli startup               startup audit
+abim-guard-cli status                Defender and engine status
+abim-guard-cli quarantine list | restore <id> | delete <id>
+abim-guard-cli import-hashes <file>  add SHA-256 hashes (txt, csv or zip)
+abim-guard-cli usb                   USB ports: count, type, in use / free, devices
+abim-guard-cli camera-mic            programs using the camera or microphone now, plus history
+abim-guard-cli monitor               live USB and camera/microphone events (Ctrl+C to stop)
 ```
 
 ## Keeping detections current
@@ -90,13 +90,13 @@ On Windows: install Rust from https://rustup.rs, then in this folder:
 cargo build --release
 ```
 
-The programs appear at `target\release\bimbo-guard.exe` (the app) and `target\release\bimbo-guard-cli.exe` (terminal commands). (The icon and version details are embedded with the `winresource` crate, which uses the Windows SDK's `rc.exe` or MinGW's `windres`.)
+The programs appear at `target\release\abim-guard.exe` (the app) and `target\release\abim-guard-cli.exe` (terminal commands). (The icon and version details are embedded with the `winresource` crate, which uses the Windows SDK's `rc.exe` or MinGW's `windres`.)
 
 ## Project layout
 
 ```
-src/main.rs        the windowed program (bimbo-guard.exe)
-src/bin/           the terminal program (bimbo-guard-cli.exe)
+src/main.rs        the windowed program (abim-guard.exe)
+src/bin/           the terminal program (abim-guard-cli.exe)
 src/lib.rs         shared start-up code and terminal commands
 src/engine.rs      detection engine: YARA-X, hashes, heuristics
 src/scan.rs        multi-threaded folder scans
@@ -117,7 +117,7 @@ The same code is also packaged for the Microsoft Store (`packaging/msix/`). The 
 
 ## Code signing policy
 
-Release programs are built from this repository's source by GitHub Actions on Windows (see `.github/workflows/build.yml`) and published on the [Releases](https://github.com/ladiran/Bimbo_Guard/releases) page together with `SHA256SUMS.txt`. Signing of release builds through the [SignPath Foundation](https://signpath.org) programme has been requested; until it is approved, release files are unsigned.
+Release programs are built from this repository's source by GitHub Actions on Windows (see `.github/workflows/build.yml`) and published on the [Releases](https://github.com/ladiran/Abim_Guard/releases) page together with `SHA256SUMS.txt`. Signing of release builds through the [SignPath Foundation](https://signpath.org) programme has been requested; until it is approved, release files are unsigned.
 
 **Team roles**
 
@@ -133,7 +133,7 @@ Release programs are built from this repository's source by GitHub Actions on Wi
 
 ## Privacy
 
-Abim Guard does not transfer any information to other networked systems unless specifically requested by the user. Its only network access is downloading a malware hash list, and only when the user presses **Download feed now** with a feed address they entered. The camera and microphone record, USB device list, scan results and logs stay on the computer, in `%LOCALAPPDATA%\BimboGuard`.
+Abim Guard does not transfer any information to other networked systems unless specifically requested by the user. Its only network access is downloading a malware hash list, and only when the user presses **Download feed now** with a feed address they entered. The camera and microphone record, USB device list, scan results and logs stay on the computer, in `%LOCALAPPDATA%\AbimGuard`.
 
 ## Developer
 

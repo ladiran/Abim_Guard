@@ -31,27 +31,27 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force selfcheck | Out-Null
-          Copy-Item target/release/bimbo-guard.exe selfcheck/copy-of-bimbo-guard.exe
-          Copy-Item target/release/bimbo-guard-cli.exe selfcheck/copy-of-bimbo-guard-cli.exe
-          $env:BIMBO_GUARD_HOME = "$PWD/hg-data"
-          $env:BIMBO_GUARD_NO_SELF_SKIP = "1"
-          ./target/release/bimbo-guard-cli.exe scan selfcheck --no-quarantine
-          if ($LASTEXITCODE -ne 0) { throw "Bimbo Guard flagged its own program files (exit code $LASTEXITCODE)" }
+          Copy-Item target/release/abim-guard.exe selfcheck/copy-of-abim-guard.exe
+          Copy-Item target/release/abim-guard-cli.exe selfcheck/copy-of-abim-guard-cli.exe
+          $env:ABIM_GUARD_HOME = "$PWD/hg-data"
+          $env:ABIM_GUARD_NO_SELF_SKIP = "1"
+          ./target/release/abim-guard-cli.exe scan selfcheck --no-quarantine
+          if ($LASTEXITCODE -ne 0) { throw "Abim Guard flagged its own program files (exit code $LASTEXITCODE)" }
 
       - name: Smoke test on Windows
         shell: pwsh
         run: |
-          $env:BIMBO_GUARD_HOME = "$PWD/hg-data"
-          ./target/release/bimbo-guard-cli.exe status
-          ./target/release/bimbo-guard-cli.exe usb
-          ./target/release/bimbo-guard-cli.exe camera-mic
+          $env:ABIM_GUARD_HOME = "$PWD/hg-data"
+          ./target/release/abim-guard-cli.exe status
+          ./target/release/abim-guard-cli.exe usb
+          ./target/release/abim-guard-cli.exe camera-mic
           exit 0
 
       - name: Hash
         shell: pwsh
         run: |
           Set-Location target/release
-          $lines = foreach ($f in "bimbo-guard.exe", "bimbo-guard-cli.exe") { (Get-FileHash $f -Algorithm SHA256).Hash.ToLower() + "  " + $f }
+          $lines = foreach ($f in "abim-guard.exe", "abim-guard-cli.exe") { (Get-FileHash $f -Algorithm SHA256).Hash.ToLower() + "  " + $f }
           $lines | Out-File -Encoding ascii SHA256SUMS.txt
           Get-Content SHA256SUMS.txt
 
@@ -60,14 +60,14 @@ jobs:
         env:
           # Set these as repository variables (Settings > Secrets and variables > Actions > Variables)
           # from Partner Center > Product identity. The defaults make a local test package.
-          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME || 'BimboGuard.LocalTest' }}
-          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER || 'CN=BimboGuardLocalTest' }}
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME || 'AbimGuard.LocalTest' }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER || 'CN=AbimGuardLocalTest' }}
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'Oladiran Johnson Abimbola' }}
         run: |
           $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value + ".0"
           $layout = "target/msix-layout"
           New-Item -ItemType Directory -Force "$layout/Assets" | Out-Null
-          Copy-Item target/release/bimbo-guard.exe, target/release/bimbo-guard-cli.exe $layout
+          Copy-Item target/release/abim-guard.exe, target/release/abim-guard-cli.exe $layout
           Copy-Item packaging/msix/Assets/* "$layout/Assets"
           (Get-Content packaging/msix/AppxManifest.template.xml -Raw).
             Replace('__IDENTITY_NAME__', $env:MSIX_IDENTITY_NAME).
@@ -76,23 +76,23 @@ jobs:
             Replace('__VERSION__', $version) | Set-Content -Encoding utf8 "$layout/AppxManifest.xml"
           $makeappx = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\makeappx.exe" | Sort-Object FullName | Select-Object -Last 1
           if (-not $makeappx) { throw "makeappx.exe not found in the Windows SDK" }
-          & $makeappx.FullName pack /d $layout /p "target/BimboGuard_${version}_x64.msix" /o
+          & $makeappx.FullName pack /d $layout /p "target/AbimGuard_${version}_x64.msix" /o
           if ($LASTEXITCODE -ne 0) { throw "makeappx failed (exit $LASTEXITCODE)" }
-          Write-Host "Built target/BimboGuard_${version}_x64.msix for identity $env:MSIX_IDENTITY_NAME"
+          Write-Host "Built target/AbimGuard_${version}_x64.msix for identity $env:MSIX_IDENTITY_NAME"
 
       - uses: actions/upload-artifact@v6
         with:
-          name: bimbo-guard-microsoft-store
+          name: abim-guard-microsoft-store
           path: |
             target/*.msix
             target/msix-layout/
 
       - uses: actions/upload-artifact@v6
         with:
-          name: bimbo-guard-windows
+          name: abim-guard-windows
           path: |
-            target/release/bimbo-guard.exe
-            target/release/bimbo-guard-cli.exe
+            target/release/abim-guard.exe
+            target/release/abim-guard-cli.exe
             target/release/SHA256SUMS.txt
 
       - name: Attach programs to the release
@@ -100,6 +100,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/release/bimbo-guard.exe
-            target/release/bimbo-guard-cli.exe
+            target/release/abim-guard.exe
+            target/release/abim-guard-cli.exe
             target/release/SHA256SUMS.txt
