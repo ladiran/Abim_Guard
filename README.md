@@ -1,4 +1,6 @@
-# Bimbo Guard
+# Abim Guard
+
+*Formerly Bimbo Guard. The app is now called Abim Guard, from the developer's name Abimbola; the GitHub project and program files keep the original name.*
 
 [![Build](https://github.com/ladiran/Bimbo_Guard/actions/workflows/build.yml/badge.svg)](https://github.com/ladiran/Bimbo_Guard/actions/workflows/build.yml)
 
@@ -27,7 +29,7 @@ Severity levels: **Malicious** (auto-quarantined), **Test file** (EICAR, auto-qu
 1. Download `bimbo-guard.exe` (and, for terminal use, `bimbo-guard-cli.exe`) from the [latest release](https://github.com/ladiran/Bimbo_Guard/releases/latest), keep them in the same folder, and double-click `bimbo-guard.exe`. `SHA256SUMS.txt` on the release page lets you check the files are exactly what GitHub built. Windows SmartScreen may say "Windows protected your PC" because the program is not code-signed yet. Click **More info**, then **Run anyway**.
 2. The Overview page shows Defender's status and starts real-time protection.
 3. Click **Quick scan** for a first check.
-4. Optional: Settings, then tick **Open Bimbo Guard minimised when I sign in**.
+4. Optional: Settings, then tick **Open Abim Guard minimised when I sign in**.
 
 No installer and no administrator rights are needed. Data lives in `%LOCALAPPDATA%\BimboGuard` (rules, quarantine, logs, settings).
 
@@ -40,7 +42,7 @@ bimbo-guard-cli.exe eicar C:\Users\Public\eicar.com
 bimbo-guard-cli.exe scan C:\Users\Public --no-quarantine
 ```
 
-Microsoft Defender will probably grab the file first. That is expected and shows Defender is working. To test Bimbo Guard on its own, add `C:\Users\Public\eicar.com` as a temporary exclusion in Windows Security, then remove the exclusion afterwards.
+Microsoft Defender will probably grab the file first. That is expected and shows Defender is working. To test Abim Guard on its own, add `C:\Users\Public\eicar.com` as a temporary exclusion in Windows Security, then remove the exclusion afterwards.
 
 ## Command line
 
@@ -67,9 +69,9 @@ The bundled rules catch well-known patterns, not new malware families. To stay c
 
 ## How the USB and camera/microphone watch works
 
-**USB.** Windows lists every port on every USB hub. A USB 3 socket appears twice (a USB 2 lane and a SuperSpeed lane) and Windows links the pair, so Bimbo Guard merges them and counts each socket once. Ports wired inside the case (webcam, Bluetooth, fingerprint reader) are reported separately as "internal". Windows says whether a port is USB-C, but it does not distinguish full-size Type-A from Mini or Micro, so non-C ports are shown as "Type-A or other". Whether a port counts as built-in or internal comes from the computer's firmware, which is occasionally wrong.
+**USB.** Windows lists every port on every USB hub. A USB 3 socket appears twice (a USB 2 lane and a SuperSpeed lane) and Windows links the pair, so Abim Guard merges them and counts each socket once. Ports wired inside the case (webcam, Bluetooth, fingerprint reader) are reported separately as "internal". Windows says whether a port is USB-C, but it does not distinguish full-size Type-A from Mini or Micro, so non-C ports are shown as "Type-A or other". Whether a port counts as built-in or internal comes from the computer's firmware, which is occasionally wrong.
 
-**Camera and microphone.** Windows records every app that opens the camera or microphone (the same record behind its privacy indicator). An app that is using a device right now has a start time but no stop time. Bimbo Guard reads this every second. Pop-ups can be switched off per app with **Trust this app**; use is still logged in History.
+**Camera and microphone.** Windows records every app that opens the camera or microphone (the same record behind its privacy indicator). An app that is using a device right now has a start time but no stop time. Abim Guard reads this every second. Pop-ups can be switched off per app with **Trust this app**; use is still logged in History.
 
 ## Honest limits
 
@@ -131,7 +133,7 @@ Release programs are built from this repository's source by GitHub Actions on Wi
 
 ## Privacy
 
-Bimbo Guard does not transfer any information to other networked systems unless specifically requested by the user. Its only network access is downloading a malware hash list, and only when the user presses **Download feed now** with a feed address they entered. The camera and microphone record, USB device list, scan results and logs stay on the computer, in `%LOCALAPPDATA%\BimboGuard`.
+Abim Guard does not transfer any information to other networked systems unless specifically requested by the user. Its only network access is downloading a malware hash list, and only when the user presses **Download feed now** with a feed address they entered. The camera and microphone record, USB device list, scan results and logs stay on the computer, in `%LOCALAPPDATA%\BimboGuard`.
 
 ## Developer
 

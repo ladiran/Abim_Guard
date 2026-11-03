@@ -1,5 +1,5 @@
 /*
-   Bimbo Guard bundled rules.
+   Abim Guard bundled rules.
 
    Every rule carries a "severity" meta value:
      test        harmless antivirus test file (EICAR)

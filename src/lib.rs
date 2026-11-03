@@ -1,4 +1,4 @@
-//! Bimbo Guard. Two programs share this code:
+//! Abim Guard. Two programs share this code:
 //! `bimbo-guard.exe` (the window, src/main.rs) and
 //! `bimbo-guard-cli.exe` (terminal commands, src/bin/bimbo-guard-cli.rs).
 
@@ -23,7 +23,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
-const HELP: &str = "Bimbo Guard, a companion malware scanner for Windows
+const HELP: &str = "Abim Guard, a companion malware scanner for Windows
 
 Open the app:   bimbo-guard.exe   (or bimbo-guard.exe --minimized)
 
@@ -88,7 +88,7 @@ fn run_gui(minimized: bool) {
     let core = match core::Core::new() {
         Ok(c) => c,
         Err(e) => {
-            system::alert("Bimbo Guard", &format!("Could not start: {e}"));
+            system::alert("Abim Guard", &format!("Could not start: {e}"));
             std::thread::sleep(std::time::Duration::from_secs(30));
             return;
         }
@@ -169,7 +169,7 @@ fn run_cli(args: &[String]) -> anyhow::Result<i32> {
                 anyhow::bail!("give at least one file or folder to scan");
             }
             let e = core.engine();
-            println!("Bimbo Guard: {} rules, {} known-bad hashes", e.rule_count, e.hash_count());
+            println!("Abim Guard: {} rules, {} known-bad hashes", e.rule_count, e.hash_count());
             for r in &roots {
                 println!("Scanning {}", r.display());
             }

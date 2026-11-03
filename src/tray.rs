@@ -200,9 +200,9 @@ mod win {
 
     fn tooltip() -> String {
         if PAUSED.load(Ordering::SeqCst) {
-            "Bimbo Guard: real-time protection paused".into()
+            "Abim Guard: real-time protection paused".into()
         } else {
-            "Bimbo Guard: protection on".into()
+            "Abim Guard: protection on".into()
         }
     }
 
@@ -229,7 +229,7 @@ mod win {
             if menu.is_null() {
                 return;
             }
-            let open = wide("Open Bimbo Guard");
+            let open = wide("Open Abim Guard");
             let pause = wide(if PAUSED.load(Ordering::SeqCst) {
                 "Resume real-time protection"
             } else {
@@ -331,7 +331,7 @@ mod win {
             RegisterClassW(&wc);
             let tb = wide("TaskbarCreated");
             TASKBAR_CREATED.store(RegisterWindowMessageW(tb.as_ptr()) as isize, Ordering::SeqCst);
-            let title = wide("Bimbo Guard tray");
+            let title = wide("Abim Guard tray");
             let hwnd = CreateWindowExW(0, class.as_ptr(), title.as_ptr(), WS_OVERLAPPED, 0, 0, 0, 0, std::ptr::null_mut(), std::ptr::null_mut(), module, std::ptr::null());
             if hwnd.is_null() {
                 let _ = tx.send(false);

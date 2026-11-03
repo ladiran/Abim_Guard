@@ -1,10 +1,10 @@
-# Publishing Bimbo Guard on the Microsoft Store
+# Publishing Abim Guard on the Microsoft Store
 
 Everything needed for the Partner Center submission, ready to copy.
 
 ## 1. Connect the package to your Store listing (once)
 
-In Partner Center, open **Bimbo Guard > Product management > Product identity** and copy three values into the repository's Actions variables (**Settings > Secrets and variables > Actions > Variables > New repository variable**):
+In Partner Center, open **Abim Guard > Product management > Product identity** and copy three values into the repository's Actions variables (**Settings > Secrets and variables > Actions > Variables > New repository variable**):
 
 | Variable name | Copy from Partner Center |
 |---|---|
@@ -22,8 +22,8 @@ These are not secret. Every build after that produces a Store-ready package in t
    ```powershell
    Add-AppxPackage -Register .\msix-layout\AppxManifest.xml
    ```
-4. Start **Bimbo Guard** from the Start menu and check: the tray icon, a camera notification, and **Settings > Start Bimbo Guard in the system tray when I sign in** (it should then appear under Windows **Settings > Apps > Startup**).
-5. Remove the test copy afterwards: **Settings > Apps > Installed apps > Bimbo Guard > Uninstall**.
+4. Start **Abim Guard** from the Start menu and check: the tray icon, a camera notification, and **Settings > Start Abim Guard in the system tray when I sign in** (it should then appear under Windows **Settings > Apps > Startup**).
+5. Remove the test copy afterwards: **Settings > Apps > Installed apps > Abim Guard > Uninstall**.
 
 ## 3. Store listing (Properties and Store listing pages)
 
@@ -41,7 +41,7 @@ These are not secret. Every build after that produces a Store-ready package in t
 
 **Description:**
 
-> Bimbo Guard is a free, open-source companion scanner for Windows that works alongside Microsoft Defender. It does not replace Defender; it adds a second set of eyes on the places threats usually arrive and tells you clearly what is happening on your computer.
+> Abim Guard is a free, open-source companion scanner for Windows that works alongside Microsoft Defender. It does not replace Defender; it adds a second set of eyes on the places threats usually arrive and tells you clearly what is happening on your computer.
 >
 > What it does:
 > • Scans files with malware detection rules, known-bad file fingerprints and checks for disguised files such as "invoice.pdf.exe"
@@ -53,7 +53,7 @@ These are not secret. Every build after that produces a Store-ready package in t
 > • Lists programs that start automatically with Windows and flags suspicious ones
 > • Runs quietly in the system tray
 >
-> Everything stays on your computer. Bimbo Guard does not send your files, camera or microphone information, or scan results anywhere.
+> Everything stays on your computer. Abim Guard does not send your files, camera or microphone information, or scan results anywhere.
 >
 > Developed by Oladiran Johnson Abimbola, Department of Physics, Federal University of Lafia, Nigeria. Anthropic's Claude was used to assist in building this application. Source code: https://github.com/ladiran/Bimbo_Guard
 
@@ -67,7 +67,7 @@ These are not secret. Every build after that produces a Store-ready package in t
 
 Copy this so the reviewers understand why a security tool reads this information:
 
-> Bimbo Guard is an open-source (MIT) companion malware scanner that runs alongside Microsoft Defender; it never disables or replaces Defender. Source: https://github.com/ladiran/Bimbo_Guard. Every package is built from that source by GitHub Actions.
+> Abim Guard is an open-source (MIT) companion malware scanner that runs alongside Microsoft Defender; it never disables or replaces Defender. Source: https://github.com/ladiran/Bimbo_Guard. Every package is built from that source by GitHub Actions.
 >
 > runFullTrust: required because this is a desktop security tool that must read files in user folders and on removable drives to scan them, and query USB hubs for its port report.
 >
@@ -88,7 +88,7 @@ Copy this so the reviewers understand why a security tool reads this information
 
 When the package is uploaded, Partner Center warns that `runFullTrust` needs approval. That is normal for every desktop (Win32) app. On the **Submission options** page, under **Restricted capabilities**, paste:
 
-> Bimbo Guard is a classic Win32 desktop application (Rust, packaged as MSIX), not a UWP app, so it needs runFullTrust to run at all. As a companion malware scanner it must read files in the user's folders and on USB drives to scan them, query USB hub information for its port report, read the camera and microphone usage records in the registry to alert the user, and start Microsoft Defender's MpCmdRun.exe for a second opinion. It never disables Defender and sends no data off the device. Source code: https://github.com/ladiran/Bimbo_Guard
+> Abim Guard is a classic Win32 desktop application (Rust, packaged as MSIX), not a UWP app, so it needs runFullTrust to run at all. As a companion malware scanner it must read files in the user's folders and on USB drives to scan them, query USB hub information for its port report, read the camera and microphone usage records in the registry to alert the user, and start Microsoft Defender's MpCmdRun.exe for a second opinion. It never disables Defender and sends no data off the device. Source code: https://github.com/ladiran/Bimbo_Guard
 
 ## 5. Pricing and availability
 

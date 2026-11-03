@@ -30,7 +30,7 @@ pub fn set(on: bool) -> anyhow::Result<()> {
         use crate::package::StartupState;
         return match crate::package::set_startup(on)? {
             StartupState::DisabledByUser if on => anyhow::bail!(
-                "starting at sign-in was switched off in Windows Settings. Turn Bimbo Guard on under Settings > Apps > Startup"
+                "starting at sign-in was switched off in Windows Settings. Turn Abim Guard on under Settings > Apps > Startup"
             ),
             StartupState::Blocked if on => anyhow::bail!("starting at sign-in is blocked on this computer by Windows policy"),
             _ => Ok(()),
