@@ -258,7 +258,7 @@ impl Engine {
             findings.extend(name_heuristics(path));
         }
 
-        // Never report Bimbo Guard's own program file.
+        // Never report Abim Guard's own program file.
         if self.self_hash == Some(digest) {
             return ScanOutcome::Clean;
         }

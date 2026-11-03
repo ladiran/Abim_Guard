@@ -232,7 +232,7 @@ impl GuiApp {
             }
             None => (WARN, "Off".to_string()),
         };
-        status_row(ui, "Bimbo Guard real-time", &mut |ui| {
+        status_row(ui, "Abim Guard real-time", &mut |ui| {
             ui.colored_label(rt_text.0, &rt_text.1);
         });
         let e = self.core.engine();
@@ -299,7 +299,7 @@ impl GuiApp {
 
         ui.add_space(18.0);
         ui.separator();
-        ui.weak("Bimbo Guard is a second layer. Keep Microsoft Defender switched on: it blocks threats \
+        ui.weak("Abim Guard is a second layer. Keep Microsoft Defender switched on: it blocks threats \
                  at the kernel level, which a user-mode program cannot do.");
     }
 
@@ -644,7 +644,7 @@ impl GuiApp {
             ui.separator();
             ui.strong("Windows");
             let mut auto = crate::autostart::is_enabled();
-            if ui.checkbox(&mut auto, "Start Bimbo Guard in the system tray when I sign in").changed() {
+            if ui.checkbox(&mut auto, "Start Abim Guard in the system tray when I sign in").changed() {
                 if let Err(e) = crate::autostart::set(auto) {
                     self.say(format!("Could not change startup setting: {e}"), false);
                 }
@@ -1041,7 +1041,7 @@ impl eframe::App for GuiApp {
             if !self.told_about_tray {
                 self.told_about_tray = true;
                 crate::system::notify(
-                    "Bimbo Guard is still running",
+                    "Abim Guard is still running",
                     "Protection continues in the system tray. Right-click the shield icon to open or quit.",
                     false,
                 );

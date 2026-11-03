@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-pub const APP_NAME: &str = "Bimbo Guard";
+pub const APP_NAME: &str = "Abim Guard";
 
 /// All folders the app keeps its data in, under %LOCALAPPDATA%\BimboGuard.
 #[derive(Clone, Debug)]
@@ -73,7 +73,7 @@ pub struct Settings {
     /// Apps allowed to use the camera/microphone without a pop-up
     /// (still logged). Registry ids, lower case.
     pub trusted_av_apps: Vec<String>,
-    /// Closing the window keeps Bimbo Guard running in the system tray.
+    /// Closing the window keeps Abim Guard running in the system tray.
     pub close_to_tray: bool,
 }
 
