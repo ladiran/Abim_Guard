@@ -2,5 +2,5 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 fn main() {
-    bimbo_guard::run(false);
+    abim_guard::run(false);
 }

@@ -12,12 +12,12 @@ In Partner Center, open **Abim Guard > Product management > Product identity** a
 | `MSIX_PUBLISHER` | Package/Identity/Publisher (starts with `CN=`) |
 | `MSIX_PUBLISHER_DISPLAY_NAME` | Package/Properties/PublisherDisplayName |
 
-These are not secret. Every build after that produces a Store-ready package in the **bimbo-guard-microsoft-store** artifact: `BimboGuard_<version>_x64.msix`. Upload that file in the submission's **Packages** step. You do not sign it; Microsoft signs it when it is published.
+These are not secret. Every build after that produces a Store-ready package in the **abim-guard-microsoft-store** artifact: `AbimGuard_<version>_x64.msix`. Upload that file in the submission's **Packages** step. You do not sign it; Microsoft signs it when it is published.
 
 ## 2. Test the package on your own PC first (optional, recommended)
 
 1. Windows **Settings > System > For developers**: turn on **Developer Mode**.
-2. Download the **bimbo-guard-microsoft-store** artifact from the build and unzip it.
+2. Download the **abim-guard-microsoft-store** artifact from the build and unzip it.
 3. In PowerShell, inside the unzipped folder:
    ```powershell
    Add-AppxPackage -Register .\msix-layout\AppxManifest.xml
@@ -29,9 +29,9 @@ These are not secret. Every build after that produces a Store-ready package in t
 
 **Category:** Security (if unavailable: Utilities & tools)
 
-**Privacy policy URL:** https://github.com/ladiran/Bimbo_Guard#privacy
+**Privacy policy URL:** https://github.com/ladiran/Abim_Guard#privacy
 
-**Website:** https://github.com/ladiran/Bimbo_Guard
+**Website:** https://github.com/ladiran/Abim_Guard
 
 **Support contact:** abimbola.oladiran@science.fulafia.edu.ng
 
@@ -55,7 +55,7 @@ These are not secret. Every build after that produces a Store-ready package in t
 >
 > Everything stays on your computer. Abim Guard does not send your files, camera or microphone information, or scan results anywhere.
 >
-> Developed by Oladiran Johnson Abimbola, Department of Physics, Federal University of Lafia, Nigeria. Anthropic's Claude was used to assist in building this application. Source code: https://github.com/ladiran/Bimbo_Guard
+> Developed by Oladiran Johnson Abimbola, Department of Physics, Federal University of Lafia, Nigeria. Anthropic's Claude was used to assist in building this application. Source code: https://github.com/ladiran/Abim_Guard
 
 **Search terms** (up to 7): antivirus, malware scanner, USB security, camera privacy, microphone privacy, Defender companion, quarantine
 
@@ -67,7 +67,7 @@ These are not secret. Every build after that produces a Store-ready package in t
 
 Copy this so the reviewers understand why a security tool reads this information:
 
-> Abim Guard is an open-source (MIT) companion malware scanner that runs alongside Microsoft Defender; it never disables or replaces Defender. Source: https://github.com/ladiran/Bimbo_Guard. Every package is built from that source by GitHub Actions.
+> Abim Guard is an open-source (MIT) companion malware scanner that runs alongside Microsoft Defender; it never disables or replaces Defender. Source: https://github.com/ladiran/Abim_Guard. Every package is built from that source by GitHub Actions.
 >
 > runFullTrust: required because this is a desktop security tool that must read files in user folders and on removable drives to scan them, and query USB hubs for its port report.
 >
@@ -81,14 +81,14 @@ Copy this so the reviewers understand why a security tool reads this information
 > • Starting at sign-in uses the manifest startup task (off by default, enabled only when the user ticks the option).
 > • Notifications are standard tray notifications and respect Windows notification settings.
 >
-> To test detection safely, use the industry-standard EICAR test file: run "bimbo-guard-cli eicar C:\Users\Public\eicar.com" (Defender may remove it first, which is expected).
+> To test detection safely, use the industry-standard EICAR test file: run "abim-guard-cli eicar C:\Users\Public\eicar.com" (Defender may remove it first, which is expected).
 > No account, sign-in, purchase or network service is required.
 
 ### Restricted capability (runFullTrust)
 
 When the package is uploaded, Partner Center warns that `runFullTrust` needs approval. That is normal for every desktop (Win32) app. On the **Submission options** page, under **Restricted capabilities**, paste:
 
-> Abim Guard is a classic Win32 desktop application (Rust, packaged as MSIX), not a UWP app, so it needs runFullTrust to run at all. As a companion malware scanner it must read files in the user's folders and on USB drives to scan them, query USB hub information for its port report, read the camera and microphone usage records in the registry to alert the user, and start Microsoft Defender's MpCmdRun.exe for a second opinion. It never disables Defender and sends no data off the device. Source code: https://github.com/ladiran/Bimbo_Guard
+> Abim Guard is a classic Win32 desktop application (Rust, packaged as MSIX), not a UWP app, so it needs runFullTrust to run at all. As a companion malware scanner it must read files in the user's folders and on USB drives to scan them, query USB hub information for its port report, read the camera and microphone usage records in the registry to alert the user, and start Microsoft Defender's MpCmdRun.exe for a second opinion. It never disables Defender and sends no data off the device. Source code: https://github.com/ladiran/Abim_Guard
 
 ## 5. Pricing and availability
 

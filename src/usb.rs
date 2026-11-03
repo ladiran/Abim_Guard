@@ -359,7 +359,7 @@ pub fn scan() -> UsbReport {
     }
     #[cfg(not(windows))]
     {
-        if std::env::var_os("BIMBO_GUARD_DEMO").is_some() {
+        if std::env::var_os("ABIM_GUARD_DEMO").is_some() {
             return demo();
         }
         UsbReport { errors: vec!["USB port details are only available on Windows".into()], ..Default::default() }

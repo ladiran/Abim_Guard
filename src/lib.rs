@@ -1,6 +1,6 @@
 //! Abim Guard. Two programs share this code:
-//! `bimbo-guard.exe` (the window, src/main.rs) and
-//! `bimbo-guard-cli.exe` (terminal commands, src/bin/bimbo-guard-cli.rs).
+//! `abim-guard.exe` (the window, src/main.rs) and
+//! `abim-guard-cli.exe` (terminal commands, src/bin/abim-guard-cli.rs).
 
 mod autostart;
 mod av;
@@ -25,21 +25,21 @@ use std::sync::atomic::Ordering;
 
 const HELP: &str = "Abim Guard, a companion malware scanner for Windows
 
-Open the app:   bimbo-guard.exe   (or bimbo-guard.exe --minimized)
+Open the app:   abim-guard.exe   (or abim-guard.exe --minimized)
 
-Terminal commands (use bimbo-guard-cli.exe):
-  bimbo-guard-cli scan <path>...       scan files or folders
-  bimbo-guard-cli quick                quick scan of common malware locations
-  bimbo-guard-cli startup              audit programs that run at startup
-  bimbo-guard-cli usb                  USB ports: type, in use or free, devices
-  bimbo-guard-cli camera-mic           programs using the camera/microphone
-  bimbo-guard-cli monitor              live USB and camera/microphone events (Ctrl+C to stop)
-  bimbo-guard-cli status               Defender and engine status
-  bimbo-guard-cli quarantine list
-  bimbo-guard-cli quarantine restore <id>
-  bimbo-guard-cli quarantine delete <id>
-  bimbo-guard-cli import-hashes <file> add SHA-256 hashes from a txt/csv/zip
-  bimbo-guard-cli eicar <file>         write the harmless EICAR test file
+Terminal commands (use abim-guard-cli.exe):
+  abim-guard-cli scan <path>...       scan files or folders
+  abim-guard-cli quick                quick scan of common malware locations
+  abim-guard-cli startup              audit programs that run at startup
+  abim-guard-cli usb                  USB ports: type, in use or free, devices
+  abim-guard-cli camera-mic           programs using the camera/microphone
+  abim-guard-cli monitor              live USB and camera/microphone events (Ctrl+C to stop)
+  abim-guard-cli status               Defender and engine status
+  abim-guard-cli quarantine list
+  abim-guard-cli quarantine restore <id>
+  abim-guard-cli quarantine delete <id>
+  abim-guard-cli import-hashes <file> add SHA-256 hashes from a txt/csv/zip
+  abim-guard-cli eicar <file>         write the harmless EICAR test file
 
 Options for scan and quick:
   --no-quarantine                      report only, never move files
@@ -54,7 +54,7 @@ fn attach_console() {
     }
 }
 
-/// Entry point for both programs. `console` is true for bimbo-guard-cli.exe.
+/// Entry point for both programs. `console` is true for abim-guard-cli.exe.
 pub fn run(console: bool) {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let first = args.first().map(String::as_str).unwrap_or("");
@@ -69,7 +69,7 @@ pub fn run(console: bool) {
     }
 
     // The windowed program can still run commands; its output goes to the
-    // terminal that started it (best effort, use bimbo-guard-cli for scripts).
+    // terminal that started it (best effort, use abim-guard-cli for scripts).
     if !console {
         attach_console();
     }

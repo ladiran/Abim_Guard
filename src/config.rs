@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 pub const APP_NAME: &str = "Abim Guard";
 
-/// All folders the app keeps its data in, under %LOCALAPPDATA%\BimboGuard.
+/// All folders the app keeps its data in, under %LOCALAPPDATA%\AbimGuard.
 #[derive(Clone, Debug)]
 pub struct AppPaths {
     pub root: PathBuf,
@@ -16,13 +16,34 @@ pub struct AppPaths {
     pub settings_file: PathBuf,
 }
 
+/// The app was called Bimbo Guard before version 0.2 and kept its data in a
+/// "BimboGuard" folder. Move that folder to the new name once, so settings,
+/// rules, hashes and quarantined files carry over.
+pub const OLD_FOLDER_NAME: &str = "BimboGuard";
+
+fn carry_over_old_folder(base: &Path) {
+    if base.exists() {
+        return;
+    }
+    if let Some(parent) = base.parent() {
+        let old = parent.join(OLD_FOLDER_NAME);
+        if old.is_dir() {
+            let _ = std::fs::rename(&old, base);
+        }
+    }
+}
+
 impl AppPaths {
     pub fn new() -> anyhow::Result<Self> {
-        let base = std::env::var_os("BIMBO_GUARD_HOME")
-            .map(PathBuf::from)
+        let custom = std::env::var_os("ABIM_GUARD_HOME").map(PathBuf::from);
+        let from_env = custom.is_some();
+        let base = custom
             .or_else(crate::package::packaged_data_dir)
-            .or_else(|| dirs::data_local_dir().map(|d| d.join("BimboGuard")))
+            .or_else(|| dirs::data_local_dir().map(|d| d.join("AbimGuard")))
             .ok_or_else(|| anyhow::anyhow!("cannot find a local app data folder"))?;
+        if !from_env {
+            carry_over_old_folder(&base);
+        }
         if crate::package::is_packaged() {
             crate::package::migrate_from_unpackaged(&base);
         }
@@ -115,5 +136,28 @@ impl Settings {
     pub fn save(&self, paths: &AppPaths) -> anyhow::Result<()> {
         std::fs::write(&paths.settings_file, serde_json::to_string_pretty(self)?)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod rename_tests {
+    use super::*;
+
+    #[test]
+    fn old_bimbo_guard_folder_is_carried_over() {
+        let tmp = std::env::temp_dir().join(format!("abim-rename-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&tmp);
+        let old = tmp.join(OLD_FOLDER_NAME);
+        std::fs::create_dir_all(old.join("quarantine")).unwrap();
+        std::fs::write(old.join("settings.json"), "{}").unwrap();
+        let new = tmp.join("AbimGuard");
+        carry_over_old_folder(&new);
+        assert!(new.join("settings.json").is_file());
+        assert!(new.join("quarantine").is_dir());
+        assert!(!old.exists());
+        // Running again with the new folder in place changes nothing.
+        carry_over_old_folder(&new);
+        assert!(new.join("settings.json").is_file());
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 /// Id of the startup task declared in the package manifest.
 #[cfg_attr(not(windows), allow(dead_code))]
-pub const STARTUP_TASK_ID: &str = "BimboGuardStartup";
+pub const STARTUP_TASK_ID: &str = "AbimGuardStartup";
 
 /// The package family name, when running from an MSIX package.
 pub fn family_name() -> Option<String> {
@@ -45,13 +45,20 @@ pub fn is_packaged() -> bool {
 pub fn packaged_data_dir() -> Option<PathBuf> {
     let family = family_name()?;
     let local = dirs::data_local_dir()?;
-    Some(local.join("Packages").join(family).join("LocalState").join("BimboGuard"))
+    Some(local.join("Packages").join(family).join("LocalState").join("AbimGuard"))
 }
 
 /// When the Store version first runs, bring over settings, rules and hashes
 /// from a previous plain-download install, so nothing has to be set up twice.
 pub fn migrate_from_unpackaged(new_root: &std::path::Path) {
-    let Some(old_root) = dirs::data_local_dir().map(|d| d.join("BimboGuard")) else { return };
+    let Some(local) = dirs::data_local_dir() else { return };
+    let Some(old_root) = ["AbimGuard", crate::config::OLD_FOLDER_NAME]
+        .iter()
+        .map(|n| local.join(n))
+        .find(|d| d.is_dir())
+    else {
+        return;
+    };
     if !old_root.is_dir() || new_root.join("settings.json").exists() {
         return;
     }

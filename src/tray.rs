@@ -321,7 +321,7 @@ mod win {
         let (tx, rx) = std::sync::mpsc::channel::<bool>();
         std::thread::spawn(move || unsafe {
             let module = GetModuleHandleW(std::ptr::null());
-            let class = wide("BimboGuardTrayWindow");
+            let class = wide("AbimGuardTrayWindow");
             let wc = WNDCLASSW {
                 lpfnWndProc: Some(wndproc),
                 hInstance: module,

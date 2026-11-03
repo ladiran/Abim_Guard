@@ -28,7 +28,7 @@ pub fn bundled_rules() -> String {
 /// SHA-256 of this program's own file, so it never reports itself.
 fn own_exe_hash() -> Option<[u8; 32]> {
     // Used by the build pipeline to prove the program does not match its own rules.
-    if std::env::var_os("BIMBO_GUARD_NO_SELF_SKIP").is_some() {
+    if std::env::var_os("ABIM_GUARD_NO_SELF_SKIP").is_some() {
         return None;
     }
     let exe = std::env::current_exe().ok()?;

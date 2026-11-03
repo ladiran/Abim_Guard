@@ -1,11 +1,11 @@
 [package]
-name = "bimbo-guard"
+name = "abim-guard"
 version = "0.2.0"
 edition = "2024"
 authors = ["Oladiran Johnson Abimbola <abimbola.oladiran@science.fulafia.edu.ng>"]
 description = "Companion malware scanner for Windows that works alongside Microsoft Defender"
 license = "MIT"
-repository = "https://github.com/ladiran/Bimbo_Guard"
+repository = "https://github.com/ladiran/Abim_Guard"
 
 [dependencies]
 yara-x = "1.22"
