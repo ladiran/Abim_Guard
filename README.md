@@ -2,7 +2,7 @@
 
 *Formerly Bimbo Guard. The app was renamed Abim Guard, after the developer's name Abimbola. Old links to the project still work, and settings, rules and quarantine from the old version are carried over automatically.*
 
-[![Build](https://github.com/ladiran/Abim_Guard/actions/workflows/build.yml/badge.svg)](https://github.com/ladiran/Abim_Guard/actions/workflows/build.yml)
+[![Build](https://github.com/ladiran/Abim_Guard/actions/workflows/build.yml/badge.svg)](https://github.com/ladiran/Abim_Guard/actions/workflows/build.yml) [![Microsoft Store](https://img.shields.io/badge/Microsoft%20Store-Get%20Abim%20Guard-0078D4)](https://apps.microsoft.com/detail/9NK2W2GCF37Q)
 
 A companion malware scanner for Windows 10 and 11. It runs **alongside Microsoft Defender**, not in place of it, and adds a second set of eyes on the places malware usually lands.
 
@@ -25,6 +25,10 @@ A companion malware scanner for Windows 10 and 11. It runs **alongside Microsoft
 Severity levels: **Malicious** (auto-quarantined), **Test file** (EICAR, auto-quarantined), **Suspicious** and **Unwanted (PUA)** (reported only, you decide).
 
 ## Getting started
+
+**Easiest: get it from the Microsoft Store.** [Abim Guard on the Microsoft Store](https://apps.microsoft.com/detail/9NK2W2GCF37Q) is free, signed by Microsoft (no SmartScreen warning) and updates automatically.
+
+Or download it from GitHub:
 
 1. Download `abim-guard.exe` (and, for terminal use, `abim-guard-cli.exe`) from the [latest release](https://github.com/ladiran/Abim_Guard/releases/latest), keep them in the same folder, and double-click `abim-guard.exe`. `SHA256SUMS.txt` on the release page lets you check the files are exactly what GitHub built. Windows SmartScreen may say "Windows protected your PC" because the program is not code-signed yet. Click **More info**, then **Run anyway**.
 2. The Overview page shows Defender's status and starts real-time protection.
@@ -78,7 +82,7 @@ The bundled rules catch well-known patterns, not new malware families. To stay c
 * It runs in user mode. It cannot block a program before it starts, protect itself from malware running as administrator, or see inside memory. That kernel-level work is what Defender does, so keep Defender on.
 * Camera and microphone monitoring relies on Windows' own usage record. Malware with its own kernel driver could bypass it.
 * Detection is only as good as its rules and hashes. Treat it as an extra layer.
-* Before giving it to others, plan to **code-sign** the .exe (otherwise SmartScreen warns every user) and to test on a few machines.
+* The GitHub downloads are not code-signed, so SmartScreen warns on first run. The [Microsoft Store version](https://apps.microsoft.com/detail/9NK2W2GCF37Q) is signed by Microsoft.
 
 ## Building from source
 
@@ -113,7 +117,7 @@ rules/core.yar     bundled detection rules
 
 ## Microsoft Store version
 
-The same code is also packaged for the Microsoft Store (`packaging/msix/`). The Store version keeps its data in its own package folder, starts at sign-in through Windows' startup settings (**Settings > Apps > Startup**), and is signed by Microsoft. Submission steps, listing text and test instructions are in [docs/microsoft-store.md](docs/microsoft-store.md).
+Abim Guard is published on the [Microsoft Store](https://apps.microsoft.com/detail/9NK2W2GCF37Q). The same code is packaged for it (`packaging/msix/`). The Store version keeps its data in its own package folder, starts at sign-in through Windows' startup settings (**Settings > Apps > Startup**), and is signed by Microsoft. Submission steps, listing text and test instructions are in [docs/microsoft-store.md](docs/microsoft-store.md).
 
 ## Code signing policy
 
