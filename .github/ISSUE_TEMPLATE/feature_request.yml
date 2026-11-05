@@ -1,0 +1,23 @@
+name: Feature suggestion
+description: An idea that would make Abim Guard more useful
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Abim Guard to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help you?
+      description: The problem it solves, or the situation where you would use it.
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where did you install it from?
+      options:
+        - Microsoft Store
+        - GitHub download
+        - Not installed yet

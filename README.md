@@ -139,6 +139,15 @@ Release programs are built from this repository's source by GitHub Actions on Wi
 
 Abim Guard does not transfer any information to other networked systems unless specifically requested by the user. Its only network access is downloading a malware hash list, and only when the user presses **Download feed now** with a feed address they entered. The camera and microphone record, USB device list, scan results and logs stay on the computer, in `%LOCALAPPDATA%\AbimGuard`.
 
+## Feedback, bugs and security reports
+
+Ideas and reports are very welcome:
+
+* **Security weakness:** please report it privately, through the [Security tab](https://github.com/ladiran/Abim_Guard/security) (**Report a vulnerability**) or by email. See [SECURITY.md](SECURITY.md).
+* **Bug or feature idea:** [open an issue](https://github.com/ladiran/Abim_Guard/issues/new/choose), or email the developer.
+
+Abim Guard is a security tool, so code contributions are not accepted; see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Developer
 
 **Oladiran Johnson Abimbola**
