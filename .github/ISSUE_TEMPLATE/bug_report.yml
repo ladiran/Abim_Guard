@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in Abim Guard does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+        **Security weakness?** Do not use this form. Report it privately instead: see [SECURITY.md](https://github.com/ladiran/Abim_Guard/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Abim Guard version
+      description: Shown on the Developer page in the app
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where did you install it from?
+      options:
+        - Microsoft Store
+        - GitHub download
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 24H2"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. Steps to repeat it help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or anything else
+      description: Optional. Please do not attach real malware.

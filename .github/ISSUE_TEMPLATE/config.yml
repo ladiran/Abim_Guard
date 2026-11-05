@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security weakness (private)
+    url: https://github.com/ladiran/Abim_Guard/security/advisories/new
+    about: Please report weaknesses privately so they can be fixed before anyone misuses them.
+  - name: Email the developer
+    url: mailto:abimbola.oladiran@science.fulafia.edu.ng
+    about: For anything else, or if you do not have a GitHub account.
