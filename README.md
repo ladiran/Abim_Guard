@@ -14,12 +14,15 @@ A companion malware scanner for Windows 10 and 11. It runs **alongside Microsoft
 | Known-bad hashes | SHA-256 list you can grow from MalwareBazaar or any text/CSV/zip feed |
 | Heuristics | Double extensions (`invoice.pdf.exe`), hidden right-to-left filename tricks, programs disguised as documents, packed executables |
 | Real-time watch | Downloads and Desktop by default, plus any USB drive you plug in. Files are checked about 2 seconds after they are saved |
+| USB drive auto-scan | The moment a USB drive is plugged in, the whole drive is quick-scanned: every folder, no size limit, checking the file types malware uses (programs, scripts, shortcuts, Office documents, PDFs, archives and disk images). Progress shows on the Real-time page; can be switched off in Settings |
+| Signature updates | A step-by-step page for downloading the latest known-malware fingerprints from MalwareBazaar, with a gentle reminder (banner, plus an optional once-a-day tray pop-up) when they are more than 2 days old |
 | Second opinion | Each detection is re-checked with Defender's own scanner (`MpCmdRun.exe -DisableRemediation`), so you see whether Defender agrees |
 | Quarantine | Malicious files are moved, scrambled so they cannot run, and can be restored |
 | Startup audit | Registry Run keys, Startup folders, Winlogon and scheduled tasks, flagged for common persistence tricks |
 | Defender health | Warns you if Defender's real-time protection has been switched off |
 | USB ports | Counts the computer's physical USB sockets, shows which are USB 3.x, USB 2.0 or USB-C, which are in use and which are free, and what is plugged into each. Updates every 2 seconds and logs every plug and unplug |
 | System tray | Keeps protecting in the background when the window is closed. The shield icon by the clock opens the app, pauses or resumes protection, or quits |
+| Send feedback | The Developer page opens the feature and bug forms, the private security report page, or an email, with your version filled in. Nothing is sent automatically |
 | Camera & microphone | Shows, within about a second, any program that switches on the camera or microphone, whether or not it was given permission, and announces it with a small tray notification (marked "trusted" for apps you trust). Warns when the program has no visible window, runs from a temporary folder, or is flagged by the scanner |
 
 Severity levels: **Malicious** (auto-quarantined), **Test file** (EICAR, auto-quarantined), **Suspicious** and **Unwanted (PUA)** (reported only, you decide).
@@ -58,6 +61,7 @@ abim-guard-cli quick                 quick scan
 abim-guard-cli startup               startup audit
 abim-guard-cli status                Defender and engine status
 abim-guard-cli quarantine list | restore <id> | delete <id>
+abim-guard-cli update-signatures    download the saved MalwareBazaar link now
 abim-guard-cli import-hashes <file>  add SHA-256 hashes (txt, csv or zip)
 abim-guard-cli usb                   USB ports: count, type, in use / free, devices
 abim-guard-cli camera-mic            programs using the camera or microphone now, plus history
@@ -68,7 +72,7 @@ abim-guard-cli monitor               live USB and camera/microphone events (Ctrl
 
 The bundled rules catch well-known patterns, not new malware families. To stay current:
 
-* **Hash feed:** create a free account at abuse.ch, get an Auth-Key, copy your MalwareBazaar SHA-256 export link into Settings, and press **Download feed now**. The recent export is regenerated every few minutes and covers the last 48 hours; do not fetch more often than that.
+* **Malware signatures:** open the **Signature updates** page and follow its five steps: create a free account at the [abuse.ch Authentication Portal](https://auth.abuse.ch/), copy your personal Auth-Key, let Abim Guard turn it into your MalwareBazaar export link, and press **Download signatures now**. MalwareBazaar's recent export covers the last 48 hours, so update at least every two days; Abim Guard reminds you when it has been longer. Each person needs their own Auth-Key: never share it, and never put it in feedback or bug reports.
 * **Rules:** drop `.yar` files into the rules folder (Settings, then **Open rules folder**) and press **Reload rules**. A broken file is skipped and reported instead of stopping the app.
 
 ## How the USB and camera/microphone watch works

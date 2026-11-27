@@ -19,6 +19,10 @@ pub struct ScanProgress {
     pub started: Mutex<Option<Instant>>,
     pub finished: Mutex<Option<Instant>>,
     pub label: Mutex<String>,
+    /// Only check the file types malware uses (USB drive quick scan).
+    pub quick_types_only: AtomicBool,
+    /// Files passed over because of their type (quick scan only).
+    pub passed_over: AtomicU64,
 }
 
 impl ScanProgress {
@@ -51,6 +55,30 @@ fn skip_dir(p: &Path, core: &Core, exclusions: &[PathBuf]) -> bool {
         return true;
     }
     exclusions.iter().any(|e| p.starts_with(e))
+}
+
+/// File types malware is spread in: programs, scripts, shortcuts, documents
+/// that can carry macros or exploits, PDFs, disk images and archives.
+const QUICK_SCAN_EXTS: &[&str] = &[
+    // programs and libraries
+    "exe", "dll", "scr", "com", "pif", "cpl", "sys", "drv", "ocx", "msi", "msp", "msix", "msixbundle", "appx",
+    "appxbundle", "jar", "apk",
+    // scripts and shortcuts
+    "bat", "cmd", "ps1", "psm1", "psd1", "vbs", "vbe", "js", "jse", "wsf", "wsh", "hta", "lnk", "url", "inf",
+    "reg", "scf", "msc", "chm", "py", "sh",
+    // documents that can carry macros or exploits
+    "doc", "docx", "docm", "dot", "dotm", "xls", "xlsx", "xlsm", "xlsb", "xlt", "xltm", "xlam", "ppt",
+    "pptx", "pptm", "pps", "ppsm", "potm", "ppam", "rtf", "one", "pdf", "html", "htm", "svg",
+    // archives and disk images
+    "zip", "rar", "7z", "cab", "gz", "tar", "tgz", "bz2", "xz", "ace", "arj", "lzh", "iso", "img", "vhd", "vhdx",
+];
+
+/// True for files a quick scan checks.
+pub fn is_quick_scan_type(p: &Path) -> bool {
+    p.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| QUICK_SCAN_EXTS.contains(&e.trim_end_matches([' ', '.']).to_ascii_lowercase().as_str()))
+        .unwrap_or(false)
 }
 
 /// Quick scan locations: where malware usually lands or hides.
@@ -97,7 +125,11 @@ pub fn run_scan(core: Arc<Core>, roots: Vec<PathBuf>, progress: Arc<ScanProgress
                     if walker_progress.cancel.load(Ordering::Relaxed) {
                         break;
                     }
+                    let quick = walker_progress.quick_types_only.load(Ordering::Relaxed);
                     match entry {
+                        Ok(e) if e.file_type().is_file() && quick && !is_quick_scan_type(e.path()) => {
+                            walker_progress.passed_over.fetch_add(1, Ordering::Relaxed);
+                        }
                         Ok(e) if e.file_type().is_file() => {
                             if tx.send(e.into_path()).is_err() {
                                 return;
@@ -165,4 +197,44 @@ pub fn run_scan(core: Arc<Core>, roots: Vec<PathBuf>, progress: Arc<ScanProgress
         None,
     );
     progress.done.store(true, Ordering::SeqCst);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quick_scan_types() {
+        for f in ["SETUP.EXE", "invoice.pdf.exe", "a.lnk", "macro.docm", "report.PDF", "x.zip", "autorun.inf", "d.iso"] {
+            assert!(is_quick_scan_type(Path::new(f)), "{f}");
+        }
+        for f in ["holiday.jpg", "song.mp3", "film.mp4", "notes.txt", "noext"] {
+            assert!(!is_quick_scan_type(Path::new(f)), "{f}");
+        }
+    }
+
+    /// A pretend USB drive: nested folders, a disguised program deep down,
+    /// and photos that a quick scan passes over.
+    #[test]
+    fn usb_quick_scan_covers_whole_drive_and_skips_harmless_types() {
+        let base = std::env::temp_dir().join(format!("abim-usb-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let core = Core::with_paths(crate::config::AppPaths::at(&base.join("data")).unwrap()).unwrap();
+        let drive = base.join("drive");
+        let deep = drive.join("a/b/c/d/e/f/g/h/i/j");
+        std::fs::create_dir_all(&deep).unwrap();
+        // Ten folders down: deeper than the old scan reached.
+        std::fs::write(deep.join("invoice.pdf.exe"), b"MZ not really a program").unwrap();
+        std::fs::write(drive.join("holiday.jpg"), b"jpeg").unwrap();
+        std::fs::write(drive.join("a/song.mp3"), b"mp3").unwrap();
+        std::fs::write(drive.join("readme.pdf"), b"%PDF-1.4 harmless").unwrap();
+        let p = Arc::new(ScanProgress::default());
+        p.quick_types_only.store(true, Ordering::SeqCst);
+        run_scan(core, vec![drive], p.clone(), false);
+        assert_eq!(p.scanned.load(Ordering::Relaxed), 2, "the .exe and the .pdf are checked");
+        assert_eq!(p.passed_over.load(Ordering::Relaxed), 2, "the photo and the song are passed over");
+        let results = p.results.lock().unwrap();
+        assert!(results.iter().any(|(d, _)| d.path.ends_with("invoice.pdf.exe")), "double extension caught");
+        let _ = std::fs::remove_dir_all(&base);
+    }
 }

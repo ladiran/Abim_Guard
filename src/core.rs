@@ -23,16 +23,23 @@ pub struct Core {
     pub settings: RwLock<Settings>,
     pub engine: RwLock<Arc<Engine>>,
     pub recent: Mutex<Vec<Event>>,
+    /// When the malware signatures were last updated (see signatures.rs).
+    pub signatures: Mutex<crate::signatures::State>,
     log_lock: Mutex<()>,
 }
 
 impl Core {
     pub fn new() -> anyhow::Result<Arc<Self>> {
-        let paths = AppPaths::new()?;
+        Self::with_paths(AppPaths::new()?)
+    }
+
+    /// Open the app's data in a given folder (used by tests).
+    pub fn with_paths(paths: AppPaths) -> anyhow::Result<Arc<Self>> {
         let settings = Settings::load(&paths);
         let engine = Engine::load(&paths, settings.max_scan_mb)?;
         let core = Arc::new(Self {
             recent: Mutex::new(load_recent(&paths, 300)),
+            signatures: Mutex::new(crate::signatures::State::load(&paths)),
             paths,
             settings: RwLock::new(settings),
             engine: RwLock::new(Arc::new(engine)),
@@ -60,6 +67,39 @@ impl Core {
         *self.engine.write().unwrap() = e.clone();
         self.log("engine", format!("Loaded {} rules and {} known-bad hashes", e.rule_count, e.hash_count()), None, None);
         Ok(e)
+    }
+
+    /// A hash list was downloaded or imported successfully.
+    pub fn record_signature_update(&self, added: usize) {
+        let mut s = self.signatures.lock().unwrap();
+        s.record_update(added, chrono::Local::now());
+        s.save(&self.paths);
+    }
+
+    /// Show the tray reminder now if it is due and switched on. Only uses the
+    /// tray (never a blocking message box), so it stays gentle; Windows
+    /// applies the user's notification settings to it.
+    pub fn maybe_remind_signatures(&self) {
+        if !self.settings().signature_reminder_popups {
+            return;
+        }
+        let now = chrono::Local::now();
+        let text = {
+            let s = self.signatures.lock().unwrap();
+            if !s.popup_due_at(now) {
+                return;
+            }
+            s.reminder_text_at(now)
+        };
+        if crate::tray::notify(
+            "Time to update malware signatures",
+            &format!("{text}\nOpen Abim Guard > Signature updates."),
+            crate::tray::Level::Info,
+        ) {
+            let mut s = self.signatures.lock().unwrap();
+            s.last_popup = Some(now);
+            s.save(&self.paths);
+        }
     }
 
     pub fn log(&self, kind: &str, message: String, path: Option<&Path>, severity: Option<&str>) {
