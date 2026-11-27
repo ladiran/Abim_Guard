@@ -194,6 +194,24 @@ pub fn alert(title: &str, text: &str) {
 }
 
 /// Open a folder in Explorer.
+/// Open a web page or mailto: link with the default browser or mail app.
+pub fn open_url(url: &str) {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::Shell::ShellExecuteW;
+        use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+        let verb: Vec<u16> = "open".encode_utf16().chain(std::iter::once(0)).collect();
+        let target: Vec<u16> = url.encode_utf16().chain(std::iter::once(0)).collect();
+        unsafe {
+            ShellExecuteW(std::ptr::null_mut(), verb.as_ptr(), target.as_ptr(), std::ptr::null(), std::ptr::null(), SW_SHOWNORMAL);
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = Command::new("xdg-open").arg(url).spawn();
+    }
+}
+
 pub fn open_folder(p: &Path) {
     #[cfg(windows)]
     {

@@ -14,6 +14,7 @@ mod package;
 mod gui;
 mod quarantine;
 mod scan;
+mod signatures;
 mod startup;
 mod system;
 mod tray;
@@ -38,6 +39,7 @@ Terminal commands (use abim-guard-cli.exe):
   abim-guard-cli quarantine list
   abim-guard-cli quarantine restore <id>
   abim-guard-cli quarantine delete <id>
+  abim-guard-cli update-signatures    download the saved MalwareBazaar link now
   abim-guard-cli import-hashes <file> add SHA-256 hashes from a txt/csv/zip
   abim-guard-cli eicar <file>         write the harmless EICAR test file
 
@@ -299,6 +301,14 @@ fn run_cli(args: &[String]) -> anyhow::Result<i32> {
             println!("Data folder : {}", core.paths.root.display());
             println!("Rules       : {}", e.rule_count);
             println!("Hashes      : {}", e.hash_count());
+            {
+                let sig = core.signatures.lock().unwrap();
+                println!(
+                    "Signatures  : updated {}{}",
+                    sig.last_update_text(),
+                    if sig.is_stale() { " (please update: see the Signature updates tab)" } else { "" }
+                );
+            }
             for err in &e.rule_errors {
                 println!("Rule error  : {err}");
             }
@@ -345,8 +355,19 @@ fn run_cli(args: &[String]) -> anyhow::Result<i32> {
         "import-hashes" => {
             let core = core::Core::new()?;
             let f = paths.first().ok_or_else(|| anyhow::anyhow!("give a file"))?;
-            let n = feeds::import_file(&core, f)?;
-            println!("Added {n} new hashes.");
+            let r = feeds::import_file(&core, f)?;
+            println!("{}", r.describe());
+            Ok(0)
+        }
+        "update-signatures" => {
+            let core = core::Core::new()?;
+            let url = core.settings().hash_feed_url;
+            if url.trim().is_empty() {
+                anyhow::bail!("no MalwareBazaar link saved yet. Open the app, go to Signature updates and follow the steps");
+            }
+            println!("Downloading the latest malware signatures...");
+            let r = feeds::download_feed(&core, &url)?;
+            println!("{}", r.describe());
             Ok(0)
         }
         other => {

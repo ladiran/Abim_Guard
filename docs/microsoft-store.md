@@ -63,6 +63,13 @@ These are not secret. Every build after that produces a Store-ready package in t
 
 **Age rating questionnaire:** the app has no user-to-user communication, no purchases, no violence or mature content.
 
+**What's new in this version** (Store listing, for the 0.3.0 update):
+
+> • New Signature updates page: clear, step-by-step instructions for downloading the latest malware fingerprints free from MalwareBazaar
+> • Gentle reminder when signatures are more than 2 days old: a banner in the app, plus a once-a-day tray pop-up you can switch off
+> • USB drives are now quick-scanned from top to bottom the moment they are plugged in
+> • New Send feedback button on the Developer page
+
 ## 4. Notes for certification (Submission options > Notes for certification)
 
 Copy this so the reviewers understand why a security tool reads this information:
@@ -76,7 +83,9 @@ Copy this so the reviewers understand why a security tool reads this information
 > • Reads USB hub information through the standard Windows USB IOCTLs (read-only) for the USB port report.
 > • Runs Microsoft Defender's MpCmdRun.exe with -DisableRemediation to get a second opinion on a detection; no settings are changed.
 > • Runs powershell.exe Get-MpComputerStatus and Get-ScheduledTask (read-only) for the Defender status and startup audit.
-> • Uses curl.exe only when the user presses "Download feed now" with a hash-list address they entered.
+> • Uses curl.exe only when the user presses "Download signatures now" (or "Download now" on the reminder banner) with the MalwareBazaar link they entered. The user's own abuse.ch Auth-Key stays in their local settings.
+> • When a USB drive is plugged in, reads the files on it (read-only) to quick-scan them; this can be switched off in Settings.
+> • "Send feedback" opens the developer's GitHub pages or an email in the user's own browser or mail app; nothing is sent automatically.
 > • Quarantine moves a detected file into the app's own data folder, scrambled; the user can restore or delete it.
 > • Starting at sign-in uses the manifest startup task (off by default, enabled only when the user ticks the option).
 > • Notifications are standard tray notifications and respect Windows notification settings.

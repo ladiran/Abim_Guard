@@ -26,6 +26,7 @@ enum Tab {
     Dashboard,
     Scan,
     Realtime,
+    Signatures,
     Usb,
     Privacy,
     Quarantine,
@@ -58,6 +59,8 @@ pub struct GuiApp {
     quitting: Arc<AtomicBool>,
     toggle_requested: Arc<AtomicBool>,
     told_about_tray: bool,
+    /// Auth-Key typed on the Signature updates page; never saved as is.
+    auth_key_input: String,
 }
 
 fn sev_color(s: Severity) -> Color32 {
@@ -103,6 +106,7 @@ impl GuiApp {
             quitting: Arc::new(AtomicBool::new(false)),
             toggle_requested: Arc::new(AtomicBool::new(false)),
             told_about_tray: false,
+            auth_key_input: String::new(),
         };
 
         // Remember the window so the tray can show and hide it.
@@ -127,6 +131,18 @@ impl GuiApp {
             }
             ctx.request_repaint();
         });
+        // Gentle tray reminder when the malware signatures are over two days
+        // old: checked every 30 minutes, shown at most once a day.
+        {
+            let core = core.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(Duration::from_secs(90));
+                loop {
+                    core.maybe_remind_signatures();
+                    std::thread::sleep(Duration::from_secs(30 * 60));
+                }
+            });
+        }
         app.refresh_defender();
         if core.settings().realtime_on_start {
             app.toggle_realtime();
@@ -236,9 +252,27 @@ impl GuiApp {
             ui.colored_label(rt_text.0, &rt_text.1);
         });
         let e = self.core.engine();
+        let (sig_stale, sig_last) = {
+            let s = self.core.signatures.lock().unwrap();
+            (s.is_stale(), s.last_update_text())
+        };
         status_row(ui, "Detection data", &mut |ui| {
             ui.label(format!("{} rules, {} known-bad hashes", e.rule_count, e.hash_count()));
+            ui.colored_label(if sig_stale { WARN } else { OK }, format!("Signatures updated {sig_last}"));
         });
+        if let Some(rt) = &self.realtime {
+            let scans = rt.usb_scans.lock().unwrap().clone();
+            if let Some(p) = scans.iter().rev().find(|p| !p.done.load(Ordering::Relaxed)) {
+                let label = p.label.lock().unwrap().clone();
+                let n = p.scanned.load(Ordering::Relaxed);
+                status_row(ui, "USB drive scan", &mut |ui| {
+                    ui.horizontal_wrapped(|ui| {
+                        ui.spinner();
+                        ui.label(format!("{label}: {n} files checked so far"));
+                    });
+                });
+            }
+        }
         let qn = self.quarantine.len();
         status_row(ui, "Quarantine", &mut |ui| {
             ui.label(format!("{qn} item(s)"));
@@ -365,7 +399,9 @@ impl GuiApp {
 
     fn page_realtime(&mut self, ui: &mut egui::Ui) {
         ui.heading("Real-time protection");
-        ui.label("Files are checked a couple of seconds after they are saved into a watched folder or copied from a USB drive.");
+        ui.label("Files are checked a couple of seconds after they are saved into a watched folder or copied to a USB drive. \
+                  When a USB drive is plugged in, Abim Guard also quick-scans the whole drive: every folder, no size limit, \
+                  checking the file types malware uses (programs, scripts, shortcuts, Office documents, PDFs and archives).");
         ui.add_space(6.0);
         if ui.button(if self.realtime.is_some() { "Pause real-time protection" } else { "Start real-time protection" }).clicked() {
             self.toggle_realtime();
@@ -377,6 +413,41 @@ impl GuiApp {
                 path_label(ui, &f.display().to_string());
             }
             ui.label(format!("{} files checked since start", rt.files_checked.load(Ordering::Relaxed)));
+
+            let scans = rt.usb_scans.lock().unwrap().clone();
+            if !scans.is_empty() {
+                ui.add_space(8.0);
+                ui.strong("USB drive quick scans");
+                for p in scans.iter().rev() {
+                    let running = !p.done.load(Ordering::Relaxed);
+                    let label = p.label.lock().unwrap().clone();
+                    let found = p.results.lock().unwrap().len();
+                    card(ui, |ui| {
+                        ui.horizontal_wrapped(|ui| {
+                            if running {
+                                ui.spinner();
+                            }
+                            ui.strong(&label);
+                            ui.label(format!(
+                                "{} files checked, {} other files passed over, {:.0} s",
+                                p.scanned.load(Ordering::Relaxed),
+                                p.passed_over.load(Ordering::Relaxed),
+                                p.elapsed_secs()
+                            ));
+                            if running && ui.small_button("Stop").clicked() {
+                                p.cancel.store(true, Ordering::SeqCst);
+                            }
+                        });
+                        if running {
+                            path_label(ui, &p.current.lock().unwrap().clone());
+                        } else if found == 0 {
+                            ui.colored_label(OK, "No threats found.");
+                        } else {
+                            ui.colored_label(BAD, format!("{found} detection(s): see Overview."));
+                        }
+                    });
+                }
+            }
         }
         ui.add_space(8.0);
         ui.weak("Change the folder list in Settings, then pause and start again.");
@@ -533,7 +604,8 @@ impl GuiApp {
                 }
             });
             ui.add_space(8.0);
-            ui.checkbox(&mut self.draft.watch_removable_drives, "Scan USB and other removable drives when plugged in");
+            ui.checkbox(&mut self.draft.usb_auto_scan, "Quick-scan the whole drive as soon as a USB drive is plugged in");
+            ui.checkbox(&mut self.draft.watch_removable_drives, "Keep watching USB drives for new files while they are plugged in");
             ui.checkbox(&mut self.draft.realtime_on_start, "Start real-time protection when the app opens");
             ui.checkbox(&mut self.draft.auto_quarantine, "Quarantine malicious files automatically (suspicious ones are only reported)");
             ui.checkbox(&mut self.draft.defender_second_opinion, "Ask Microsoft Defender for a second opinion on each detection");
@@ -541,6 +613,10 @@ impl GuiApp {
             ui.checkbox(&mut self.draft.usb_popups, "Pop up when a USB device is plugged in");
             ui.checkbox(&mut self.draft.av_popups, "Notify me whenever any program switches the camera or microphone on");
             ui.checkbox(&mut self.draft.close_to_tray, "Keep running in the system tray when I close the window");
+            ui.checkbox(
+                &mut self.draft.signature_reminder_popups,
+                "Remind me with a tray pop-up (at most once a day) when malware signatures are more than 2 days old",
+            );
             ui.horizontal_wrapped(|ui| {
                 ui.label("Largest file to pattern scan (MB)");
                 ui.add(egui::DragValue::new(&mut self.draft.max_scan_mb).range(1..=2048));
@@ -608,35 +684,11 @@ impl GuiApp {
                         Err(e) => self.say(format!("Reload failed: {e}"), false),
                     }
                 }
-                if ui.button("Import hash list...").on_hover_text("A text or CSV file with SHA-256 hashes").clicked() {
-                    if let Some(f) = rfd::FileDialog::new().pick_file() {
-                        match crate::feeds::import_file(&self.core, &f) {
-                            Ok(n) => self.say(format!("Added {n} new hashes"), true),
-                            Err(e) => self.say(format!("Import failed: {e}"), false),
-                        }
-                    }
-                }
             });
-            ui.add_space(6.0);
-            ui.label("Hash feed address (for example your MalwareBazaar export link, which needs a free abuse.ch Auth-Key)");
-            ui.text_edit_singleline(&mut self.draft.hash_feed_url);
-            let busy = self.busy.load(Ordering::Relaxed);
             ui.horizontal_wrapped(|ui| {
-                if ui.add_enabled(!busy, egui::Button::new("Download feed now")).clicked() {
-                    let url = self.draft.hash_feed_url.trim().to_string();
-                    let (core, msg, b) = (self.core.clone(), self.message.clone(), self.busy.clone());
-                    b.store(true, Ordering::SeqCst);
-                    std::thread::spawn(move || {
-                        let r = crate::feeds::download_feed(&core, &url);
-                        *msg.lock().unwrap() = Some(match r {
-                            Ok(n) => (format!("Feed downloaded: {n} new hashes"), true),
-                            Err(e) => (format!("Feed failed: {e}"), false),
-                        });
-                        b.store(false, Ordering::SeqCst);
-                    });
-                }
-                if busy {
-                    ui.spinner();
+                ui.label("Known-bad fingerprints (malware signatures) are updated on their own page.");
+                if ui.button("Signature updates...").clicked() {
+                    self.tab = Tab::Signatures;
                 }
             });
 
@@ -912,6 +964,8 @@ impl GuiApp {
             });
         });
         ui.add_space(8.0);
+        self.feedback_card(ui);
+        ui.add_space(8.0);
         card(ui, |ui| {
             ui.strong("AI assistance");
             ui.label(AI_STATEMENT);
@@ -922,6 +976,258 @@ impl GuiApp {
             ui.label("YARA-X by VirusTotal (pattern matching), egui and eframe (interface), notify (file watching), and Microsoft Defender's MpCmdRun for second opinions.");
             ui.add_space(4.0);
             ui.weak("Released under the MIT licence.");
+        });
+    }
+}
+
+// ---------- signature updates, reminder banner and feedback ----------
+
+const AUTH_PORTAL: &str = "https://auth.abuse.ch/";
+const BAZAAR_EXPORT: &str = "https://bazaar.abuse.ch/export/";
+const ISSUES_URL: &str = "https://github.com/ladiran/Abim_Guard/issues/new/choose";
+const PRIVATE_REPORT_URL: &str = "https://github.com/ladiran/Abim_Guard/security/advisories/new";
+
+/// Where this copy was installed from, for feedback and bug reports.
+fn install_source() -> &'static str {
+    if crate::package::is_packaged() { "Microsoft Store" } else { "GitHub download" }
+}
+
+fn version_line() -> String {
+    format!("Abim Guard {} ({})", env!("CARGO_PKG_VERSION"), install_source())
+}
+
+/// Minimal percent-encoding for mailto subject and body.
+fn mail_encode(s: &str) -> String {
+    let mut out = String::new();
+    for b in s.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
+}
+
+fn step(ui: &mut egui::Ui, n: u32, title: &str, add: impl FnOnce(&mut egui::Ui)) {
+    card(ui, |ui| {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(format!("{n}")).size(20.0).strong().color(ACCENT));
+            ui.add_space(4.0);
+            ui.vertical(|ui| {
+                ui.label(RichText::new(title).strong());
+                add(ui);
+            });
+        });
+    });
+    ui.add_space(4.0);
+}
+
+impl GuiApp {
+    /// Gentle banner shown on every page while signatures are out of date.
+    fn signature_banner(&mut self, ui: &mut egui::Ui) {
+        let text = {
+            let s = self.core.signatures.lock().unwrap();
+            if !s.is_stale() {
+                return;
+            }
+            s.reminder_text_at(chrono::Local::now())
+        };
+        egui::Frame::group(ui.style())
+            .inner_margin(egui::Margin::same(10))
+            .corner_radius(6.0)
+            .stroke(egui::Stroke::new(1.0, WARN))
+            .show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.horizontal_wrapped(|ui| {
+                    ui.colored_label(WARN, RichText::new("Time to update malware signatures").strong());
+                });
+                ui.label(text);
+                ui.horizontal_wrapped(|ui| {
+                    if ui.button(RichText::new("Update signatures").strong()).clicked() {
+                        self.tab = Tab::Signatures;
+                    }
+                    let url = self.core.settings().hash_feed_url;
+                    let busy = self.busy.load(Ordering::Relaxed);
+                    if !url.trim().is_empty() && ui.add_enabled(!busy, egui::Button::new("Download now")).clicked() {
+                        self.download_signatures(url);
+                    }
+                    if busy {
+                        ui.spinner();
+                    }
+                });
+            });
+        ui.add_space(8.0);
+    }
+
+    fn download_signatures(&mut self, url: String) {
+        let url = url.trim().to_string();
+        // Remember the link (only this one setting; other unsaved edits stay as they are).
+        let mut cur = self.core.settings();
+        if cur.hash_feed_url != url {
+            cur.hash_feed_url = url.clone();
+            let _ = self.core.save_settings(cur);
+        }
+        self.draft.hash_feed_url = url.clone();
+        let (core, msg, b) = (self.core.clone(), self.message.clone(), self.busy.clone());
+        if b.swap(true, Ordering::SeqCst) {
+            return;
+        }
+        std::thread::spawn(move || {
+            let r = crate::feeds::download_feed(&core, &url);
+            *msg.lock().unwrap() = Some(match r {
+                Ok(r) => (r.describe(), true),
+                Err(e) => (format!("Signature update failed: {e}"), false),
+            });
+            b.store(false, Ordering::SeqCst);
+        });
+    }
+
+    fn page_signatures(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Signature updates");
+        ui.label(
+            "Abim Guard recognises known malware by its SHA-256 fingerprint, a unique code worked out from the file. \
+             New malware appears every day, so the list of fingerprints (the \"malware signatures\") needs regular updates. \
+             They come free from MalwareBazaar, a public malware library run by abuse.ch in Switzerland.",
+        );
+        ui.add_space(8.0);
+
+        // Status
+        let (stale, last, added) = {
+            let s = self.core.signatures.lock().unwrap();
+            (s.is_stale(), s.last_update_text(), s.last_added)
+        };
+        let eng = self.core.engine();
+        ui.horizontal_wrapped(|ui| {
+            stat(ui, "last updated", last.clone(), Some(if stale { WARN } else { OK }));
+            stat(ui, "known-bad fingerprints", eng.hash_count().to_string(), None);
+            stat(ui, "detection rules", eng.rule_count.to_string(), None);
+        });
+        if stale && last == "never" {
+            ui.colored_label(WARN, "Your signatures have not been updated yet. Follow the steps below: it takes about five minutes.");
+        } else if stale {
+            ui.colored_label(WARN, "Your signatures are more than 2 days old. Press Download signatures now to update them.");
+        } else if last != "never" {
+            ui.colored_label(OK, format!("Up to date. The last update added {added} new fingerprints."));
+        }
+        ui.add_space(10.0);
+
+        // Quick update for people who have set it up already.
+        let busy = self.busy.load(Ordering::Relaxed);
+        card(ui, |ui| {
+            ui.strong("Update now");
+            ui.label("Your MalwareBazaar export link (it contains your personal Auth-Key):");
+            ui.add(egui::TextEdit::singleline(&mut self.draft.hash_feed_url).password(true).desired_width(f32::INFINITY));
+            ui.horizontal_wrapped(|ui| {
+                let url = self.draft.hash_feed_url.clone();
+                if ui
+                    .add_enabled(!busy && !url.trim().is_empty(), egui::Button::new(RichText::new("Download signatures now").strong()))
+                    .clicked()
+                {
+                    self.download_signatures(url);
+                }
+                if ui.button("Import from a file...").on_hover_text("A text, CSV or zip file of SHA-256 hashes").clicked() {
+                    if let Some(f) = rfd::FileDialog::new().pick_file() {
+                        match crate::feeds::import_file(&self.core, &f) {
+                            Ok(r) => self.say(r.describe(), true),
+                            Err(e) => self.say(format!("Import failed: {e}"), false),
+                        }
+                    }
+                }
+                if busy {
+                    ui.spinner();
+                    ui.label("Downloading...");
+                }
+            });
+        });
+        ui.add_space(12.0);
+
+        ui.label(RichText::new("First time? Set it up in five steps").size(17.0).strong());
+        ui.weak("You only do steps 1 to 4 once. It is free, and takes about five minutes.");
+        ui.add_space(6.0);
+
+        step(ui, 1, "Create a free abuse.ch account", |ui| {
+            ui.label("Open the abuse.ch Authentication Portal and sign in. It lets you sign in with an account you already have, so there is no new password to remember.");
+            if ui.button("Open the abuse.ch portal").clicked() {
+                system::open_url(AUTH_PORTAL);
+            }
+        });
+        step(ui, 2, "Copy your personal Auth-Key", |ui| {
+            ui.label("Once signed in, the portal shows your Auth-Key, a long code made of letters and numbers. Copy it.");
+            ui.colored_label(
+                WARN,
+                "Treat your Auth-Key like a password: it is yours alone. Never share it, post it or send it to anyone, \
+                 including in feedback or bug reports. Abim Guard keeps it only on this computer.",
+            );
+        });
+        step(ui, 3, "Turn your Auth-Key into your export link", |ui| {
+            ui.label("Paste your Auth-Key here and press Make my link. Abim Guard builds the link to MalwareBazaar's \"recent\" list, which covers the last 48 hours and is refreshed every few minutes.");
+            ui.horizontal_wrapped(|ui| {
+                ui.add(egui::TextEdit::singleline(&mut self.auth_key_input).password(true).hint_text("Auth-Key").desired_width(320.0));
+                if ui.button("Make my link").clicked() {
+                    match crate::feeds::malwarebazaar_recent_url(&self.auth_key_input) {
+                        Some(url) => {
+                            self.draft.hash_feed_url = url.clone();
+                            let mut cur = self.core.settings();
+                            cur.hash_feed_url = url;
+                            match self.core.save_settings(cur) {
+                                Ok(()) => self.say("Your export link is ready and saved. Now press Download signatures now.", true),
+                                Err(e) => self.say(format!("Could not save the link: {e}"), false),
+                            }
+                            self.auth_key_input.clear();
+                        }
+                        None => self.say("That does not look like an Auth-Key. Copy it again from the abuse.ch portal.", false),
+                    }
+                }
+            });
+            ui.weak("Prefer to copy the link yourself? While signed in, open MalwareBazaar's export page, copy the SHA-256 export link and paste it into the box under Update now.");
+            if ui.small_button("Open MalwareBazaar export page").clicked() {
+                system::open_url(BAZAAR_EXPORT);
+            }
+        });
+        step(ui, 4, "Download the signatures", |ui| {
+            ui.label("Press Download signatures now (at the top of this page). After a few seconds a message at the bottom of the window says how many new fingerprints were added, and the count above goes up.");
+            ui.label("If it says the download contained no fingerprints, the link or Auth-Key is wrong: repeat steps 2 and 3.");
+        });
+        step(ui, 5, "Repeat every two days", |ui| {
+            ui.label("The recent list covers 48 hours, so updating at least every two days means nothing is missed. \
+                      If you forget, Abim Guard shows a reminder banner, and a small tray pop-up once a day \
+                      (you can switch the pop-up off in Settings). Updating takes one click: the link is remembered.");
+        });
+
+        ui.add_space(8.0);
+        card(ui, |ui| {
+            ui.strong("Good to know");
+            ui.label("• Only fingerprints are downloaded, never malware itself, and nothing about your computer is sent.");
+            ui.label("• Your Auth-Key travels only to abuse.ch, as part of the download link.");
+            ui.label("• Fingerprints catch exact copies of known malware. Detection rules and Microsoft Defender catch the rest, so keep Defender switched on.");
+            ui.label("• Command line: abim-guard-cli update-signatures downloads the saved link.");
+        });
+    }
+
+    fn feedback_card(&mut self, ui: &mut egui::Ui) {
+        card(ui, |ui| {
+            ui.strong("Send feedback");
+            ui.label("Ideas, problems and security concerns are all welcome. Nothing is sent automatically: each option opens a page or an email that you can read before sending.");
+            ui.weak(format!("Your version: {}", version_line()));
+            ui.add_space(4.0);
+            ui.horizontal_wrapped(|ui| {
+                if ui.button(RichText::new("Suggest a feature or report a bug").strong()).clicked() {
+                    system::open_url(ISSUES_URL);
+                    ui.ctx().copy_text(version_line());
+                    self.say("Opening the feedback page. Your version details are copied, ready to paste into the form.", true);
+                }
+                if ui.button("Report a security weakness privately").clicked() {
+                    system::open_url(PRIVATE_REPORT_URL);
+                    ui.ctx().copy_text(version_line());
+                    self.say("Opening the private report page (needs a free GitHub account). No account? Use Email the developer.", true);
+                }
+                if ui.button("Email the developer").clicked() {
+                    let subject = mail_encode("Abim Guard feedback");
+                    let body = mail_encode(&format!("\n\n---\n{}\n", version_line()));
+                    system::open_url(&format!("mailto:{DEVELOPER_EMAIL}?subject={subject}&body={body}"));
+                }
+            });
+            ui.weak("Please never include your Auth-Key or real malware files in feedback.");
         });
     }
 }
@@ -1071,6 +1377,7 @@ impl eframe::App for GuiApp {
                 (Tab::Dashboard, "Overview"),
                 (Tab::Scan, "Scan"),
                 (Tab::Realtime, "Real-time"),
+                (Tab::Signatures, "Signature updates"),
                 (Tab::Usb, "USB ports"),
                 (Tab::Privacy, "Camera & mic"),
                 (Tab::Quarantine, "Quarantine"),
@@ -1090,6 +1397,12 @@ impl eframe::App for GuiApp {
                                 text = text.color(BAD);
                             }
                         }
+                    }
+                }
+                if t == Tab::Signatures && self.core.signatures.lock().unwrap().is_stale() {
+                    text = RichText::new(name).size(15.0).strong();
+                    if self.tab != t {
+                        text = text.color(WARN);
                     }
                 }
                 if t == Tab::Dashboard && !self.alerts.is_empty() {
@@ -1126,10 +1439,14 @@ impl eframe::App for GuiApp {
                 .auto_shrink([false, false])
                 .show(ui, |ui| {
             ui.add_space(4.0);
+            if tab != Tab::Signatures {
+                self.signature_banner(ui);
+            }
             match tab {
                 Tab::Dashboard => self.page_dashboard(ui),
                 Tab::Scan => self.page_scan(ui),
                 Tab::Realtime => self.page_realtime(ui),
+                Tab::Signatures => self.page_signatures(ui),
                 Tab::Usb => self.page_usb(ui),
                 Tab::Privacy => self.page_privacy(ui),
                 Tab::Quarantine => self.page_quarantine(ui),

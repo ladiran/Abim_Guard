@@ -3,6 +3,7 @@
 
 use crate::core::Core;
 use crate::engine::{Detection, ScanOutcome};
+use crate::scan::ScanProgress;
 use notify::{EventKind, RecursiveMode, Watcher};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -18,6 +19,8 @@ pub struct Realtime {
     pub files_checked: Arc<AtomicU64>,
     pub watching: Arc<Mutex<Vec<PathBuf>>>,
     pub alerts: Arc<Mutex<Vec<(Detection, String)>>>,
+    /// Quick scans of USB drives started when they were plugged in.
+    pub usb_scans: Arc<Mutex<Vec<Arc<ScanProgress>>>>,
     handle: Option<std::thread::JoinHandle<()>>,
 }
 
@@ -27,6 +30,7 @@ impl Realtime {
         let files_checked = Arc::new(AtomicU64::new(0));
         let watching = Arc::new(Mutex::new(Vec::new()));
         let alerts = Arc::new(Mutex::new(Vec::new()));
+        let usb_scans: Arc<Mutex<Vec<Arc<ScanProgress>>>> = Arc::new(Mutex::new(Vec::new()));
 
         let (tx, rx) = crossbeam_channel::unbounded::<notify::Result<notify::Event>>();
         let mut watcher = notify::recommended_watcher(move |res| {
@@ -45,6 +49,7 @@ impl Realtime {
         core.log("watch", format!("Real-time protection started on {} folder(s)", watched.len()), None, None);
 
         let (s, fc, w, a) = (stop.clone(), files_checked.clone(), watching.clone(), alerts.clone());
+        let us = usb_scans.clone();
         let handle = std::thread::spawn(move || {
             let mut watcher = watcher;
             let mut pending: HashMap<PathBuf, Instant> = HashMap::new();
@@ -117,14 +122,19 @@ impl Realtime {
                     last_drive_check = Instant::now();
                     let current: HashSet<PathBuf> = crate::system::removable_drives().into_iter().collect();
                     for d in current.difference(&known_drives) {
-                        core.log("watch", format!("Removable drive {} connected; scanning it", d.display()), Some(d), None);
+                        // Watch it for new files...
                         if watcher.watch(d, RecursiveMode::Recursive).is_ok() {
                             w.lock().unwrap().push(d.clone());
                         }
-                        for e in walkdir::WalkDir::new(d).max_depth(6).into_iter().flatten() {
-                            if e.file_type().is_file() {
-                                pending.insert(e.into_path(), Instant::now() - Duration::from_secs(3));
-                            }
+                        // ...and quick-scan everything already on it.
+                        if core.settings().usb_auto_scan {
+                            core.log("watch", format!("USB drive {} connected; quick-scanning the whole drive", d.display()), Some(d), None);
+                            let p = start_usb_scan(core.clone(), d.clone(), a.clone(), popup_alerts);
+                            let mut list = us.lock().unwrap();
+                            list.retain(|x| !x.done.load(Ordering::Relaxed));
+                            list.push(p);
+                        } else {
+                            core.log("watch", format!("USB drive {} connected; watching it for new files", d.display()), Some(d), None);
                         }
                     }
                     for d in known_drives.difference(&current) {
@@ -139,15 +149,61 @@ impl Realtime {
             core.log("watch", "Real-time protection stopped".into(), None, None);
         });
 
-        Ok(Self { stop, files_checked, watching, alerts, handle: Some(handle) })
+        Ok(Self { stop, files_checked, watching, alerts, usb_scans, handle: Some(handle) })
     }
 
     pub fn stop(mut self) {
         self.stop.store(true, Ordering::SeqCst);
+        for p in self.usb_scans.lock().unwrap().iter() {
+            p.cancel.store(true, Ordering::SeqCst);
+        }
         if let Some(h) = self.handle.take() {
             let _ = h.join();
         }
     }
+}
+
+/// Quick-scan a newly connected USB drive on its own thread: every folder,
+/// no size limit, checking the file types malware uses. Detections are
+/// handled like any other (quarantine per settings) and shown on Overview.
+fn start_usb_scan(
+    core: Arc<Core>,
+    drive: PathBuf,
+    alerts: Arc<Mutex<Vec<(Detection, String)>>>,
+    popups: bool,
+) -> Arc<ScanProgress> {
+    let p = Arc::new(ScanProgress::default());
+    p.quick_types_only.store(true, Ordering::SeqCst);
+    let name = drive.display().to_string();
+    *p.label.lock().unwrap() = format!("USB drive {name} quick scan");
+    if popups {
+        crate::system::notify("Checking USB drive", &format!("Abim Guard is quick-scanning {name}."), false);
+    }
+    let p2 = p.clone();
+    std::thread::spawn(move || {
+        crate::scan::run_scan(core, vec![drive], p2.clone(), true);
+        let results = p2.results.lock().unwrap().clone();
+        let checked = p2.scanned.load(Ordering::Relaxed);
+        if popups {
+            if results.is_empty() {
+                if !p2.cancel.load(Ordering::Relaxed) {
+                    crate::system::notify(
+                        "USB drive checked",
+                        &format!("{name}: {checked} file(s) checked, no threats found."),
+                        false,
+                    );
+                }
+            } else {
+                crate::system::notify(
+                    "Threat found on USB drive",
+                    &format!("{name}: {} detection(s). Open Abim Guard to see them.", results.len()),
+                    true,
+                );
+            }
+        }
+        alerts.lock().unwrap().extend(results);
+    });
+    p
 }
 
 fn should_skip(p: &Path, core: &Core) -> bool {

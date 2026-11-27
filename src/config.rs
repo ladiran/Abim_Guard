@@ -71,7 +71,7 @@ impl AppPaths {
 pub struct Settings {
     /// Folders watched in real time.
     pub watched_folders: Vec<PathBuf>,
-    /// Also scan USB / removable drives when they are plugged in.
+    /// Watch USB / removable drives for new files while they are plugged in.
     pub watch_removable_drives: bool,
     /// Start real-time watching when the app opens.
     pub realtime_on_start: bool,
@@ -96,6 +96,10 @@ pub struct Settings {
     pub trusted_av_apps: Vec<String>,
     /// Closing the window keeps Abim Guard running in the system tray.
     pub close_to_tray: bool,
+    /// Quick-scan the whole drive as soon as a USB drive is plugged in.
+    pub usb_auto_scan: bool,
+    /// Tray pop-up (at most once a day) when signatures are over 2 days old.
+    pub signature_reminder_popups: bool,
 }
 
 impl Default for Settings {
@@ -121,6 +125,8 @@ impl Default for Settings {
             av_popups: true,
             trusted_av_apps: Vec::new(),
             close_to_tray: true,
+            usb_auto_scan: true,
+            signature_reminder_popups: true,
         }
     }
 }
